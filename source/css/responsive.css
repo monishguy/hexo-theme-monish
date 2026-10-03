@@ -1,0 +1,549 @@
+/* ==========================================================================
+   monish · 10/11 · responsive.css
+   全部断点媒体查询：≤1200 / ≤900（rail 折叠成顶部块）/ ≤768 / ≤480
+   抽屉、单列、表格横向滚动、打印、减少动态效果
+   硬约束（契约 §9）：320 / 375 / 480 / 768 / 900 / 992 / 1200 / 1440
+   所有宽度都不得横向滚动。
+   ========================================================================== */
+
+/* ============================================================ ≤1200px ==== */
+@media (max-width: 1200px) {
+  :root {
+    --rail-w: minmax(220px, 28%);
+    --gap-rail: clamp(24px, 3vw, 44px);
+  }
+
+  .rail {
+    padding: clamp(24px, 2.6vw, 38px) 0 clamp(24px, 2.6vw, 38px) clamp(24px, 2.6vw, 38px);
+  }
+
+  .rail-slogan {
+    font-size: clamp(2.1rem, 4.8vw, 3.6rem);
+  }
+
+  .main {
+    padding: clamp(24px, 2.6vw, 38px) clamp(24px, 2.6vw, 38px) clamp(24px, 2.6vw, 38px) var(--space-5);
+  }
+
+  .post-pill {
+    padding: var(--space-5);
+  }
+}
+
+/* ============================================================= ≤900px ==== */
+/* 左栏不再分栏：rail 折成吸顶的顶部块，正文单列铺满 */
+@media (max-width: 900px) {
+  .shell {
+    display: block;
+  }
+
+  .rail {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    flex-direction: column;
+    gap: var(--space-2);
+    min-height: 0;
+    padding: var(--space-5) var(--space-5) var(--space-4);
+    background: var(--surface);
+    border-start-start-radius: var(--radius-card);
+    border-start-end-radius: var(--radius-card);
+    border-block-end: 1px solid var(--line);
+  }
+
+  /* 吸顶后与正文之间补一层阴影（JS 加 is-scrolled） */
+  .rail.is-scrolled {
+    border-block-end-color: var(--border);
+    box-shadow: var(--shadow-pill);
+  }
+
+  /* 折叠成一行：大标题与「头像 + 作者名 + 菜单按钮」并排；放不下就换行，绝不互相挤压 */
+  .rail-top {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-2) var(--space-3);
+  }
+
+  /* 标题与右侧头像在视觉上对齐：往内、往下各让一点 */
+  .rail-slogan {
+    flex: 1 1 auto;
+    min-width: 0;
+    /* 与右侧「头像 + 作者名 + 菜单药丸」视觉齐平：实测标题盒中心比头像中心
+       高 8px，所以下移一档（--space-3）刚好对齐 34px 的头像 */
+    padding-block-start: var(--space-3);
+    padding-inline-start: var(--space-2);
+    font-size: clamp(1.3rem, 5.6vw, 1.9rem);
+    line-height: 1.08;
+  }
+
+  /* 身份区：头像 + 作者名 + 右上角菜单按钮 */
+  .rail-identity {
+    flex: 0 0 auto;
+    gap: var(--space-3);
+  }
+
+  .rail-author {
+    gap: var(--space-2);
+  }
+
+  /* 窄屏的作者弹层改以整条折叠顶栏为参照（.rail 是 sticky，是已定位祖先）：
+     从顶栏下方弹出、右对齐并留出卡片内缘，既不会被卡片右边缘裁掉，
+     也不会压住 .rail-nav（它是下拉面板，盖住的是正文区）。 */
+  .rail-identity {
+    position: static;
+  }
+
+  .author-popover {
+    inset-inline-start: auto;
+    inset-inline-end: var(--space-5);
+    top: calc(100% + var(--space-2));
+    max-width: min(320px, calc(100% - var(--space-5) * 2));
+  }
+
+  .author-avatar {
+    width: 34px;
+    height: 34px;
+  }
+
+  .rail-bottom {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-start;
+    gap: var(--space-2) var(--space-4);
+  }
+
+  /* 折叠态只保留右上角那一个「收起菜单」入口：横向铺开的导航整条隐藏
+     （它的链接都在抽屉里），避免同一屏出现两套菜单。 */
+  .rail-nav {
+    display: none;
+  }
+
+  /* 折叠后只保留右上角那一个菜单入口（.rail-identity 里），
+     主题切换收进抽屉，工具行只留搜索/RSS，避免一行塞四个按钮。 */
+  .nav-toggle {
+    display: inline-flex;
+    padding: 0 var(--space-3);
+    block-size: 34px;
+    align-items: center;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-pill);
+  }
+
+  .rail-utils .theme-toggle {
+    display: none;
+  }
+
+  /* 折叠后的 rail 比 --nav-height 高（大标题 + 导航 + 工具行），所以抽屉要落在
+     它下面，否则面板会盖住 .nav-toggle（用户就没法用按钮关闭抽屉了）。
+     top 与 max-height 用同一个算式，保证自洽且不溢出。 */
+  .nav-drawer {
+    top: calc(var(--nav-height) + var(--space-8) + var(--space-5));
+    max-height: calc(100vh - var(--nav-height) - var(--space-8) - var(--space-5) - var(--space-2));
+    max-height: calc(100dvh - var(--nav-height) - var(--space-8) - var(--space-5) - var(--space-2));
+  }
+
+  /* 单列布局不再需要两栏之间的竖分隔线 */
+  .main {
+    border-inline-start: 0;
+    padding: var(--space-5);
+  }
+
+  /* 单列 + 顶栏吸顶时，右侧竖向滚动指示条没有意义 */
+  .scroll-track {
+    display: none;
+  }
+
+  /* 首屏色块：窄屏用 svh 兜住移动端地址栏（配置高度仍生效） */
+  .hero--full {
+    height: auto;
+    min-height: min(var(--hero-height, 100vh), 100svh);
+  }
+
+  .hero--center {
+    padding-block: var(--space-7);
+  }
+
+  .hero--banner {
+    min-height: min(var(--hero-height, 50vh), 50vh);
+  }
+
+  /* 日期列更窄，但保持 grid 结构 */
+  .post-row {
+    grid-template-columns: 46px minmax(0, 1fr);
+    gap: var(--space-3) var(--space-4);
+  }
+}
+
+/* ============================================================= ≤768px ==== */
+@media (max-width: 768px) {
+  /* 画布留白收小（--shell-min-h 会自动跟随） */
+  :root {
+    --shell-pad: 12px;
+  }
+
+  /* 圆角收一档，但不放大用户配的更小值 */
+  .shell,
+  .card {
+    border-radius: min(var(--radius-card), 28px);
+  }
+
+  .rail {
+    padding: var(--space-3) var(--space-4);
+    border-start-start-radius: min(var(--radius-card), 28px);
+    border-start-end-radius: min(var(--radius-card), 28px);
+  }
+
+  .main {
+    padding: var(--space-4);
+  }
+
+  .post-list {
+    gap: var(--space-4);
+  }
+
+  .post-pill {
+    padding: var(--space-4);
+    border-radius: var(--radius-md);
+  }
+
+  .post-pill-title {
+    font-size: 1.15rem;
+  }
+
+  .post-row {
+    grid-template-columns: 40px minmax(0, 1fr);
+    gap: var(--space-3);
+  }
+
+  .card {
+    padding: var(--space-5);
+  }
+
+  .card-title {
+    font-size: clamp(1.4rem, 6.4vw, 2rem);
+  }
+
+  .hero {
+    padding: var(--space-7) var(--space-4);
+  }
+
+  /* 表格自己横向滚动，不撑破页面 */
+  .monish-prose table {
+    display: block;
+    max-width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .monish-prose th,
+  .monish-prose td {
+    white-space: nowrap;
+  }
+
+  .monish-prose pre {
+    padding: var(--space-3) var(--space-4);
+    font-size: .8125rem;
+  }
+
+  /* 触屏没有 hover，复制按钮常显 */
+  .code-copy {
+    opacity: 1;
+  }
+
+  .post-nav {
+    grid-template-columns: 1fr;
+  }
+
+  .post-nav-next {
+    text-align: start;
+  }
+
+  .term-card {
+    padding: var(--space-4);
+  }
+
+  .back-to-top {
+    inset-inline-end: var(--space-4);
+    bottom: var(--space-4);
+  }
+}
+
+/* ============================================================= ≤480px ==== */
+@media (max-width: 480px) {
+  .rail {
+    padding: var(--space-3);
+    gap: var(--space-2);
+  }
+
+  /* 极窄屏：让身份行自然换到第二行（标题独占一行才不会被断成 3-4 行），
+     换行后 .rail-bottom 依旧是「导航 + 搜索」两行，抽屉顶 144px 仍在菜单药丸之下 */
+  .rail-slogan {
+    font-size: clamp(1.25rem, 5.2vw, 1.7rem);
+  }
+
+  .rail-bottom {
+    gap: var(--space-2);
+  }
+
+  .main {
+    padding: var(--space-3);
+  }
+
+  .post-list {
+    gap: var(--space-3);
+  }
+
+  .post-row {
+    grid-template-columns: 34px minmax(0, 1fr);
+    gap: var(--space-2) var(--space-3);
+  }
+
+  .date-day {
+    font-size: .9375rem;
+  }
+
+  .post-pill {
+    padding: var(--space-3) var(--space-4);
+  }
+
+  .post-pill-title {
+    font-size: 1.0625rem;
+  }
+
+  .page-number,
+  .pagination .extend {
+    min-width: 30px;
+    height: 30px;
+    padding: 0 var(--space-2);
+  }
+
+  .hero-meta {
+    flex-direction: column;
+    gap: var(--space-1);
+  }
+
+  .hero-meta > * + * {
+    padding-inline-start: 0;
+    border-inline-start: 0;
+  }
+
+  .footer-inner {
+    flex-direction: column;
+    gap: var(--space-1);
+  }
+
+  .term-index-item {
+    padding: var(--space-3) var(--space-4);
+  }
+
+  .term-card-item {
+    flex-wrap: wrap;
+    gap: var(--space-1) var(--space-2);
+  }
+
+  .empty-state {
+    padding: var(--space-7) var(--space-4);
+  }
+
+  .breadcrumb {
+    gap: var(--space-1);
+  }
+
+  .not-found-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .not-found-actions .btn {
+    width: 100%;
+  }
+
+  /* 灯箱：窄屏左右按钮与图片各留走道，不压住图片主体 */
+  .lightbox {
+    padding: var(--space-3);
+  }
+
+  .lightbox-image {
+    max-width: calc(100vw - 124px);
+  }
+
+  .lightbox-prev,
+  .lightbox-next {
+    width: 40px;
+    height: 40px;
+    font-size: 1.25rem;
+  }
+
+  .lightbox-prev {
+    inset-inline-start: var(--space-2);
+  }
+
+  .lightbox-next {
+    inset-inline-end: var(--space-2);
+  }
+
+  .lightbox-caption {
+    max-width: calc(100vw - var(--space-4) * 2);
+  }
+
+  .search-box {
+    top: 8vh;
+    width: calc(100vw - var(--space-4) * 2);
+  }
+
+  .search-results {
+    max-height: 50vh;
+  }
+
+  .toast {
+    bottom: var(--space-5);
+  }
+}
+
+/* ============================================================== 打印 ==== */
+@media print {
+  .shell {
+    display: block;
+    width: auto;
+    max-width: none;
+    min-height: 0;
+    margin: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  /* 隐藏所有交互外壳（正文与页脚保留） */
+  .rail,
+  .scroll-track,
+  .back-to-top,
+  .nav-drawer,
+  .nav-backdrop,
+  .search-box,
+  .search-mask,
+  .lightbox,
+  .toast,
+  .skip-link,
+  .comments {
+    display: none;
+  }
+
+  .main {
+    border-inline-start: 0;
+    padding: 0;
+  }
+
+  .card {
+    padding: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  .site-footer {
+    width: auto;
+    margin: 0;
+  }
+
+  .post-list {
+    display: block;
+  }
+
+  .post-row {
+    display: block;
+    margin-bottom: var(--space-4);
+  }
+
+  .post-pill {
+    padding: 0;
+    box-shadow: none;
+  }
+
+  .hero {
+    height: auto;
+    min-height: 0;
+    padding: var(--space-5) 0;
+  }
+
+  .hero-bg,
+  .hero-overlay,
+  .hero-particles {
+    display: none;
+  }
+
+  .monish-prose pre,
+  .monish-prose .highlight,
+  .monish-prose blockquote,
+  .monish-prose table,
+  .monish-prose img,
+  .post-pill,
+  .term-card {
+    break-inside: avoid;
+  }
+}
+
+/* ==================================================== 减少动态效果 ==== */
+/* ---------------------------------------------------------------------
+   降级动效（prefers-reduced-motion: reduce）
+   策略按 motion-web 的 Reduced Motion Fallback Ladder：
+   一律收成「不位移、不缩放、瞬时完成」，但**不隐藏内容** ——
+   揭示类元素直接给到终态，避免有人看到一片空白。
+   用通配符兜底（新加的动效不需要再回来补名单），再单独纠正
+   那些「终态本身依赖 transform」的元素。
+   --------------------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+    transition-delay: 0ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  /* 原生滚动驱动动画在降级模式下不参与（它不是 transition，上面的
+     animation-duration 覆盖不到 timeline 驱动的进度） */
+  @supports (animation-timeline: view()) {
+    .monish-prose > :is(h2, h3, h4, figure, pre, blockquote, table) {
+      animation: none;
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  /* 悬停位移与缩放一律取消 */
+  .post-pill:hover,
+  .term-card-more:hover .fa,
+  .lightbox-close:hover,
+  .tagcloud-wrap > a:hover,
+  .scroll-thumb.is-active {
+    transform: none;
+  }
+
+  /* 左右按钮只保留垂直居中位移，不做缩放 */
+  .lightbox-prev:hover,
+  .lightbox-next:hover {
+    transform: translateY(-50%);
+  }
+
+  /* 终态依赖 transform/opacity 的元素直接给到终态 */
+  [data-reveal] {
+    opacity: 1;
+    transform: none;
+  }
+
+  .nav-drawer,
+  .nav-drawer .drawer-link,
+  .search-box,
+  .author-popover,
+  .skip-link {
+    opacity: 1;
+    transform: none;
+  }
+}

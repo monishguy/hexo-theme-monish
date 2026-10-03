@@ -1,0 +1,67 @@
+<%
+/**
+ * 评论区。支持 valine / disqus / giscus 三种系统，默认关闭。
+ * 设计契约 §1（post.comments）。
+ */
+var cfg = monish_config();
+var comments = cfg.post.comments || {};
+var enabled = comments.enable && page.comments !== false;
+var system = comments.system || 'valine';
+var hasValine = comments.valine && comments.valine.enable && comments.valine.appId && comments.valine.appKey;
+var hasDisqus = !!comments.disqus_shortname;
+var hasGiscus = comments.giscus && comments.giscus.repo && comments.giscus.repo_id;
+%>
+<% if (enabled && (hasValine || hasDisqus || hasGiscus)){ %>
+  <section class="comments" id="comments" aria-label="<%= monish_t('comments') %>">
+    <h3 class="comments-title"><%= monish_t('comments') %></h3>
+
+    <% if (system === 'valine' && hasValine){ %>
+      <div class="vcomment" id="vcomments"></div>
+      <script src="//cdn.jsdelivr.net/npm/valine@1.5.1/dist/Valine.min.js"></script>
+      <script>
+        new Valine({
+          el: '#vcomments',
+          appId: '<%= comments.valine.appId %>',
+          appKey: '<%= comments.valine.appKey %>',
+          placeholder: '<%= (comments.valine.placeholder || monish_t('no_comment')).replace(/'/g, "\\'") %>',
+          path: '<%- url_for(page.path) %>',
+          lang: '<%= comments.valine.lang || "zh-cn" %>',
+          pageSize: 10,
+          avatar: 'mp',
+          recordIP: false
+        });
+      </script>
+    <% } else if (system === 'disqus' && hasDisqus){ %>
+      <div id="disqus_thread"></div>
+      <script>
+        var disqus_config = function () {
+          this.page.url = '<%- full_url_for(page.path) %>';
+          this.page.identifier = '<%= page._id %>';
+        };
+        (function () {
+          var d = document, s = d.createElement('script');
+          s.src = 'https://<%= comments.disqus_shortname %>.disqus.com/embed.js';
+          s.setAttribute('data-timestamp', +new Date());
+          (d.head || d.body).appendChild(s);
+        })();
+      </script>
+      <noscript><%= monish_t('no_comment') %></noscript>
+    <% } else if (system === 'giscus' && hasGiscus){ %>
+      <script src="https://giscus.app/client.js"
+              data-repo="<%= comments.giscus.repo %>"
+              data-repo-id="<%= comments.giscus.repo_id %>"
+              data-category="<%= comments.giscus.category %>"
+              data-category-id="<%= comments.giscus.category_id %>"
+              data-mapping="<%= comments.giscus.mapping || 'pathname' %>"
+              data-lang="<%= comments.giscus.lang || 'zh-CN' %>"
+              data-reactions-enabled="1"
+              data-emit-metadata="0"
+              data-input-position="bottom"
+              data-theme="preferred_color_scheme"
+              data-loading="lazy"
+              crossorigin="anonymous"
+              async>
+      </script>
+    <% } %>
+  </section>
+<% } %>

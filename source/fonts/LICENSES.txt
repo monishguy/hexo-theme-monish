@@ -1,0 +1,48 @@
+# 自托管字体说明
+
+本目录下的 woff2 是主题自带的网页字体（webfont），**不依赖任何外部 CDN**，
+国内访问稳定、离线可用。全部取自 fontsource 的 **latin 子集**，
+只覆盖拉丁字符；中文由字体栈里的系统 CJK 字体承接（见 `DESIGN-CONTRACT.md` §5）。
+
+| 文件 | 角色 | 字体 | 字重 | 大小 |
+| --- | --- | --- | --- | --- |
+| `archivo-black-400.woff2` | 超粗标题 | Archivo Black | 400 | 18.6 KB |
+| `inter-400.woff2` | 正文 | Inter | 400 | 23.7 KB |
+| `inter-500.woff2` | 正文强调 | Inter | 500 | 24.3 KB |
+| `inter-600.woff2` | 小标题 | Inter | 600 | 24.5 KB |
+| `jetbrains-mono-400.woff2` | 等宽小字 | JetBrains Mono | 400 | 21.2 KB |
+| `jetbrains-mono-500.woff2` | 等宽强调 | JetBrains Mono | 500 | 21.8 KB |
+| `jetbrains-mono-700.woff2` | 等宽标题 | JetBrains Mono | 700 | 21.9 KB |
+
+合计约 **155 KB**，只在使用到对应字重时才下载（`unicode-range` + `font-display: swap`）。
+
+## 来源与版本
+
+- `@fontsource/archivo-black@5.2.6` → `files/archivo-black-latin-400-normal.woff2`
+- `@fontsource/inter@5.2.6` → `files/inter-latin-{400,500,600}-normal.woff2`
+- `@fontsource/jetbrains-mono@5.2.6` → `files/jetbrains-mono-latin-{400,500,700}-normal.woff2`
+
+重命名规则：去掉 `-latin-<weight>-normal` 后缀，只保留 `字体名-字重.woff2`。
+`source/css/fonts.css` 里的 `unicode-range` 与 fontsource 的 latin 子集定义一致。
+
+## 许可证
+
+三款字体均为 **SIL Open Font License 1.1（OFL-1.1）**，允许自由使用、修改、
+再分发（包括商用与嵌入网页），要求保留版权声明且不得单独售卖字体本身。
+
+| 字体 | 版权 | 许可 |
+| --- | --- | --- |
+| Archivo Black | Copyright (c) Omnibus-Type | OFL-1.1 |
+| Inter | Copyright (c) The Inter Project Authors | OFL-1.1 |
+| JetBrains Mono | Copyright (c) JetBrains s.r.o. | OFL-1.1 |
+
+OFL-1.1 全文：<https://scripts.sil.org/OFL>
+
+## 替换 / 关闭字体
+
+- **换字体**：把新的 woff2 放进本目录，改 `source/css/fonts.css` 的 `@font-face`，
+  并在主题 `_config.yml` 的 `appearance.display_font / body_font / mono_font` 填对应族名。
+- **只用系统字体**：把 `appearance.webfont` 设为 `none`，`head.ejs` 不再引入
+  `fonts.css`，页面直接用字体栈里的系统字体（体积归零，但不同设备观感不同）。
+- **第三方 CDN**：把 `appearance.webfont` 设为 `cdn` 会改用 Google Fonts；
+  国内访问不稳定，仅作备选。

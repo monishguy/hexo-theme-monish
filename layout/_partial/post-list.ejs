@@ -1,0 +1,29 @@
+<%
+/**
+ * 文章列表（首页 / 归档 / 分类 / 标签 共用）。设计契约 §3.4。
+ * 只用 page.posts（为空时回退 site.posts）。
+ */
+var items = (page.posts && page.posts.length) ? page.posts : (site.posts || []);
+%>
+<% if (items && items.length){ %>
+  <div class="post-list" id="latest-posts">
+    <% items.each(function (item){ %>
+      <%- partial('_partial/post-pill', {post: item}) %>
+    <% }); %>
+  </div>
+<% } else { %>
+  <div class="empty-state" data-reveal>
+    <span class="fa fa-leaf empty-state-icon" aria-hidden="true"></span>
+    <p class="empty-state-text"><%= monish_t('no_posts') %></p>
+  </div>
+<% } %>
+
+<% if (page.total > 1){ %>
+  <nav class="pagination" aria-label="<%= monish_t('page', '') %>">
+    <%- paginator({
+      prev_text: monish_t('prev_page'),
+      next_text: monish_t('next_page'),
+      escape: false
+    }) %>
+  </nav>
+<% } %>

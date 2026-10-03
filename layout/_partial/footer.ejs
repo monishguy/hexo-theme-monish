@@ -1,0 +1,35 @@
+<%
+/**
+ * 页脚：shell 外面的一条居中等宽小字。设计契约 §3.6。
+ */
+var cfg = monish_config();
+var footer = cfg.footer;
+var author = cfg.site.author || cfg.site.title;
+var since = footer.since;
+if (!since && site.posts && site.posts.length) {
+  var oldestPost = site.posts.sort('date').first();
+  since = oldestPost && oldestPost.date ? oldestPost.date.format('YYYY') : '';
+}
+var currentYear = String(new Date().getFullYear());
+var yearRange = since && String(since) !== currentYear ? since + '–' + currentYear : currentYear;
+%>
+<footer class="site-footer" id="site-footer">
+  <div class="footer-inner">
+    <span class="footer-copyright">
+      <% if (footer.copyright){ %>
+        <%- footer.copyright %>
+      <% } else { %>
+        &copy; <%= yearRange %> <%= author %>
+      <% } %>
+    </span>
+    <% if (footer.powered !== false){ %>
+      <span class="footer-powered"><%- monish_t('powered_by', '<a href="https://hexo.io/" target="_blank" rel="noopener">Hexo</a>') %></span>
+      <span class="footer-theme-name">monish</span>
+    <% } %>
+    <% if (footer.icp){ %>
+      <span class="footer-icp">
+        <a href="<%= footer.icp_link || 'https://beian.miit.gov.cn/' %>" target="_blank" rel="noopener"><%= footer.icp %></a>
+      </span>
+    <% } %>
+  </div>
+</footer>

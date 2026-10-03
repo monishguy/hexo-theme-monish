@@ -1,0 +1,74 @@
+# monish theme language pack — English (en)
+# The key set is frozen by themes/monish/DESIGN-CONTRACT.md §6 (v1.3, 61 keys); all packs must match exactly.
+# Verify with: node themes/monish/test/theme-unit-smoke.mjs
+
+home: Home
+archives: Archives
+categories: Categories
+category: Category
+tags: Tags
+tag: Tag
+about: About
+friends: Friends
+
+latest_posts: Latest Posts
+all_posts: All Posts
+no_posts: No posts yet
+read_more: Read More
+scroll_down: Scroll Down
+back_to_top: Back to Top
+
+posted_on: Posted on
+updated_on: Updated on
+reading_time: Reading time
+minutes: min
+words: words
+word_count: Word count
+
+prev_post: Previous Post
+next_post: Next Post
+toc: Table of Contents
+toc_empty: No headings yet
+share: Share
+comment: Comment
+comments: Comments
+no_comment: No comments yet — be the first
+
+search: Search
+search_placeholder: Search posts…
+search_empty: Nothing matched your search
+search_results: Search results
+
+powered_by: Powered by %s
+theme: Theme
+theme_light: Light
+theme_dark: Dark
+theme_auto: Auto
+mode_switch: Switch theme
+rss: RSS
+
+menu: Menu
+close: Close
+expand: Expand
+copied: Copied
+copy: Copy
+not_found: Page not found
+not_found_desc: The page you are looking for does not exist or has moved.
+back_home: Back to home
+
+page: Page %s
+pages: Pages
+total_posts: posts
+site_running: 'Running for %s years'
+topics: Topics
+author: Author
+copyright: Copyright
+published: Published
+
+prev_page: Previous
+next_page: Next
+more: More
+
+skip_to_content: Skip to content
+sidebar: Sidebar
+license_note: Please credit the author and source with a link, licensed under CC BY-NC-SA 4.0

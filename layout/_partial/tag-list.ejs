@@ -1,0 +1,45 @@
+<%
+/**
+ * 标签索引：标签云 + 全部标签清单。
+ * 被 layout/tag.ejs（标签归档页）与 layout/page.ejs（/tags/ 独立页）共用。
+ * 设计契约 §3.9。
+ */
+var cfg = monish_config();
+var accent = cfg.appearance.accent || '#7FA88B';
+var accentDark = cfg.appearance.accent_dark || '#8FBF9F';
+var groups = site.tags ? site.tags.sort('name').toArray() : [];
+var cloud = groups.length
+  ? tagcloud({
+      min_font: 13,
+      max_font: 26,
+      unit: 'px',
+      amount: 0,
+      orderby: 'count',
+      order: -1,
+      color: true,
+      start_color: accent,
+      end_color: accentDark,
+      class: 'tagcloud',
+      level: 6,
+      show_count: false
+    })
+  : '';
+%>
+<% if (cloud){ %>
+  <div class="tagcloud-wrap" data-reveal><%- cloud %></div>
+<% } %>
+<% if (groups.length){ %>
+  <div class="term-index" data-reveal>
+    <% groups.forEach(function (group){ %>
+      <a class="term-index-item" href="<%- url_for(group.path) %>">
+        <span class="term-index-name"><%= group.name %></span>
+        <span class="term-index-count"><%= group.length %></span>
+      </a>
+    <% }); %>
+  </div>
+<% } else { %>
+  <div class="empty-state" data-reveal>
+    <span class="fa fa-leaf empty-state-icon" aria-hidden="true"></span>
+    <p class="empty-state-text"><%= monish_t('no_posts') %></p>
+  </div>
+<% } %>

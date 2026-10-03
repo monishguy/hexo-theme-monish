@@ -1,0 +1,24 @@
+<%
+/**
+ * 归档年 / 月明细页（/archives/2026/ 、/archives/2026/09/）。
+ * page.year / page.month 由 hexo-generator-archive 提供。
+ */
+var cfg = monish_config();
+var archTitle = monish_t('archives');
+if (typeof page.year !== 'undefined' && page.year !== null){
+  archTitle = String(page.year);
+  if (typeof page.month !== 'undefined' && page.month !== null){
+    var monthNumber = parseInt(page.month, 10);
+    archTitle = String(page.year) + ' / ' + (monthNumber < 10 ? '0' + monthNumber : String(monthNumber));
+  }
+}
+%>
+<article class="card" id="content-card">
+  <header class="card-head">
+    <p class="post-date"><%= archTitle %></p>
+    <h1 class="card-title"><%= monish_t('archives') %></h1>
+  </header>
+  <div class="card-body">
+    <%- partial('_partial/archive-list') %>
+  </div>
+</article>

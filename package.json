@@ -1,0 +1,51 @@
+{
+  "name": "hexo-theme-monish",
+  "version": "2.0.0",
+  "description": "monish —— 纸卡风格的 Hexo 主题：浅灰画布上一张超大圆角白卡，左栏超粗大标题 + 等宽导航，右栏药丸文章列表；自托管 Archivo Black / Inter / JetBrains Mono，浅色·深色·自动三模式，零运行时依赖。",
+  "license": "MIT",
+  "author": "MonishGuy",
+  "keywords": [
+    "hexo",
+    "hexo-theme",
+    "theme",
+    "blog",
+    "paper",
+    "card",
+    "minimal",
+    "editorial",
+    "dark-mode",
+    "self-hosted-fonts",
+    "archivo-black",
+    "inter",
+    "jetbrains-mono",
+    "monish"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/monishguy/hexo-theme-monish.git"
+  },
+  "bugs": {
+    "url": "https://github.com/monishguy/hexo-theme-monish/issues"
+  },
+  "homepage": "https://github.com/monishguy/hexo-theme-monish#readme",
+  "scripts": {
+    "test": "node test/theme-unit-smoke.mjs"
+  },
+  "hexo": {
+    "version": ">=6.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "files": [
+    "_config.yml",
+    "languages",
+    "layout",
+    "scripts",
+    "source",
+    "test",
+    "DESIGN-CONTRACT.md",
+    "README.md",
+    "LICENSE"
+  ]
+}

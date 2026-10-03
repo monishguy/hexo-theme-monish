@@ -1,0 +1,16 @@
+<%
+/**
+ * 首页。设计契约 §3.4 / §3.7。
+ *
+ * hero.layout: card（默认）→ 不渲染独立首屏，左栏 .rail-slogan 就是主角
+ * hero.layout: full/center/banner → 顶部渲染全屏色块首屏（此时 CSS 会隐藏左栏）
+ */
+var cfg = monish_config();
+var heroLayout = String(cfg.hero.layout || 'card').toLowerCase();
+var isSplash = cfg.hero.enable !== false && heroLayout !== 'card';
+%>
+<% if (isSplash){ %>
+  <%- partial('_partial/hero') %>
+<% } %>
+
+<%- partial('_partial/post-list') %>

@@ -1,0 +1,188 @@
+/* ==========================================================================
+   monish · 1/11 · variables.css
+   设计令牌（DESIGN-CONTRACT.md §2 · v2「纸卡」）—— 唯一颜色真相
+
+   三态主题：
+     :root                        浅色（默认，也是 html[data-theme="light"] 的取值）
+     html[data-theme="dark"]      强制深色
+     @media (prefers-color-scheme: dark) + html:not([data-theme])   自动兜底
+       （无 JS 时 data-theme 不存在；有 JS 时 head 内联脚本总会写入 data-theme，
+        因此兜底媒体查询永远不会和显式选择冲突）
+
+   注意：两处深色令牌块必须逐条完全一致（纯 CSS 无 mixin，只能复制）。
+   ========================================================================== */
+
+:root {
+  color-scheme: light;
+
+  /* ================================================================ 颜色 */
+  /* 用户可配令牌：head.ejs 在所有样式表**之前**注入
+     `:root{--user-accent:…;--user-accent-dark:…;--user-radius:…;
+            --user-font-display:…;--user-font-body:…;--user-font-mono:…}`。
+     注入块与这里的 :root 同优先级、且被本文件覆盖，因此只能靠 var() 回退取值；
+     未注入时回退到契约 §2 的内置默认值。 */
+  --accent: var(--user-accent, #7FA88B);
+  --accent-strong: #5F8A6C;
+  --accent-soft: #EAF1EB;
+
+  --canvas: #F0F0EE;
+  --surface: #FFFFFF;
+  --surface-2: #FFFFFF;
+  --surface-3: #F6F6F4;
+
+  --text: #101010;
+  /* 无障碍：正文灰要在白卡上达到 AA 4.5:1。设计图原值偏浅
+     （#8C8C8C=3.36:1、#B4B4B4=2.07:1，不达标），这里各压深一档：
+     #6B6B6B≈5.9:1、#767676≈4.5:1，观感仍是「弱化的灰」。 */
+  --text-muted: #6B6B6B;
+  --text-faint: #767676;
+
+  --border: #E8E8E5;
+  --line: #DCDCD8;
+
+  --shadow-card: 0 30px 70px rgba(20, 20, 20, .10), 0 2px 8px rgba(20, 20, 20, .04);
+  --shadow-pill: 0 12px 30px rgba(20, 20, 20, .06);
+  --shadow-hover: 0 18px 44px rgba(20, 20, 20, .10);
+
+  /* ================================================================ 字体 */
+  /* 三个角色：超粗标题 / 中性正文 / 等宽小标签（v1 的 --font-serif/--font-sans 已废弃） */
+  --font-display: var(--user-font-display, "Archivo Black", "Inter", "PingFang SC",
+    "Microsoft YaHei", "Hiragino Sans GB", "Noto Sans SC", system-ui, sans-serif);
+  --font-body: var(--user-font-body, "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI",
+    "PingFang SC", "Microsoft YaHei", "Hiragino Sans GB", Roboto, "Helvetica Neue", Arial, sans-serif);
+  /* 代码 / 小标签等宽栈：① IDE 自带与常见社区字体 ② 各平台出厂等宽
+     ③ 中文等宽（代码注释里的中文不掉进非等宽）④ ui-monospace 兜底 */
+  --font-mono: var(--user-font-mono,
+    "JetBrains Mono", "Cascadia Code", "Cascadia Mono",
+    "JetBrainsMono Nerd Font", "Fira Code", "Fira Mono", "Source Code Pro",
+    "IBM Plex Mono", "Roboto Mono", "Hack", "Inconsolata", "Victor Mono",
+    "Anonymous Pro", "SF Mono", SFMono-Regular, Menlo, Monaco, Consolas,
+    "Liberation Mono", "DejaVu Sans Mono", "Ubuntu Mono", "Noto Sans Mono",
+    "Sarasa Mono SC", "Sarasa Fixed SC", "Noto Sans Mono CJK SC",
+    "Microsoft YaHei", "PingFang SC", "Hiragino Sans GB",
+    ui-monospace, monospace);
+
+  /* ============================================================ 排版尺度 */
+  --fs-display: clamp(2.4rem, 5.6vw, 4.75rem);
+  --lh-display: .9;
+  --ls-display: -.02em;
+  --fs-title: clamp(1.6rem, 3.4vw, 2.6rem);
+  --fs-body: 16.5px;
+  --lh-body: 1.75;
+  --fs-label: 12px;
+  --ls-label: .1em;
+
+  /* ============================================================ 圆角尺寸 */
+  --radius-card: var(--user-radius, 44px);
+  --radius-lg: 26px;
+  --radius-md: 16px;
+  --radius-sm: 10px;
+  --radius-pill: 999px;
+
+  /* 画布 → 大卡片的间距，以及卡片最小高度（一屏） */
+  --shell-pad: 22px;
+  --shell-min-h: calc(100vh - var(--shell-pad) * 2);
+  --rail-w: minmax(240px, 30%);
+  --gap-rail: clamp(28px, 4vw, 64px);
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --space-8: 64px;
+
+  /* ================================================================ 动效 */
+  /* 时长档位对齐 motion-web 的 duration scale —— 每一档都要能用「意图」解释，
+     解释不了就减半。全部只用于 transform / opacity（GPU 合成），不动布局属性。 */
+  --speed-instant: 90ms;  /* 按下反馈、tooltip */
+  --speed-fast: 170ms;    /* hover / 切换 */
+  --speed: 320ms;         /* 面板滑入、抽屉、卡片抬升 */
+  --speed-medium: 460ms;  /* 区块揭示、图片打开 */
+  --speed-slow: 720ms;    /* 首屏标题入场、路由级过渡 */
+
+  /* 缓动
+     ease           ：通用兜底
+     ease-out-expo  ：快进慢出、软着陆 —— 所有「揭示」类动画的默认曲线
+     ease-in-out-quart：对称平滑，自动循环用
+     ease-out-back  ：轻微过冲，只给「确认」类小反馈
+     ease-spring    ：linear() 手写的弹簧曲线（回弹-落定）。cubic-bezier 表达不了
+                      过冲，小元件用它就能拿到和 JS 弹簧一致的手感，不必为每个
+                      按钮引一个动画库。 */
+  --ease: cubic-bezier(.22, .61, .36, 1);
+  --ease-out-expo: cubic-bezier(.16, 1, .3, 1);
+  --ease-in-out-quart: cubic-bezier(.76, 0, .24, 1);
+  --ease-out-back: cubic-bezier(.34, 1.56, .64, 1);
+  --ease-spring: linear(0, .32 8%, .79 20%, 1.03 30%, 1.01 46%, 1);
+
+  /* 列表错峰：每项之间 70ms（motion-web 的 standard-list） */
+  --stagger: 70ms;
+
+  /* 移动端折叠后的 rail 顶栏高度（≤900px 才用） */
+  --nav-height: 56px;
+}
+
+/* ==== DARK TOKENS BEGIN ==== */
+html[data-theme="dark"] {
+  color-scheme: dark;
+
+  /* 深色强调色：用户可配（appearance.accent_dark）；strong/soft 随 --accent
+     就地推导（混入同主题的 --text / --surface，不引入额外字面色），
+     默认值下与契约 §2.1 的 color-mix 公式一致。
+     --text / --surface 与本块同元素，引用顺序不影响解析。 */
+  --accent: var(--user-accent-dark, #8FBF9F);
+  --accent-strong: color-mix(in srgb, var(--accent) 74%, var(--text));
+  --accent-soft: color-mix(in srgb, var(--accent) 16%, var(--surface));
+
+  --canvas: #121212;
+  --surface: #1A1A1A;
+  --surface-2: #202020;
+  --surface-3: #262626;
+
+  --text: #F2F2F0;
+  /* 深色：在 #1A1A1A 卡面上保持 AA —— #A8A8A8≈7:1、#8F8F8F≈5:1 */
+  --text-muted: #A8A8A8;
+  --text-faint: #8F8F8F;
+
+  --border: #2A2A2A;
+  --line: #343434;
+
+  --shadow-card: 0 30px 70px rgba(0, 0, 0, .55);
+  --shadow-pill: 0 12px 30px rgba(0, 0, 0, .4);
+  --shadow-hover: 0 18px 44px rgba(0, 0, 0, .5);
+}
+/* ==== DARK TOKENS END ==== */
+
+/* ==== DARK TOKENS BEGIN ==== */
+@media (prefers-color-scheme: dark) {
+  html:not([data-theme]) {
+    color-scheme: dark;
+
+    /* 深色强调色：用户可配（appearance.accent_dark）；strong/soft 随 --accent
+       就地推导（混入同主题的 --text / --surface，不引入额外字面色），
+       默认值下与契约 §2.1 的 color-mix 公式一致。
+       --text / --surface 与本块同元素，引用顺序不影响解析。 */
+    --accent: var(--user-accent-dark, #8FBF9F);
+    --accent-strong: color-mix(in srgb, var(--accent) 74%, var(--text));
+    --accent-soft: color-mix(in srgb, var(--accent) 16%, var(--surface));
+
+    --canvas: #121212;
+    --surface: #1A1A1A;
+    --surface-2: #202020;
+    --surface-3: #262626;
+
+    --text: #F2F2F0;
+    --text-muted: #A8A8A8;
+    --text-faint: #8F8F8F;
+
+    --border: #2A2A2A;
+    --line: #343434;
+
+    --shadow-card: 0 30px 70px rgba(0, 0, 0, .55);
+    --shadow-pill: 0 12px 30px rgba(0, 0, 0, .4);
+    --shadow-hover: 0 18px 44px rgba(0, 0, 0, .5);
+  }
+}
+/* ==== DARK TOKENS END ==== */

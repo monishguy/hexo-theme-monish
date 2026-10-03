@@ -1,0 +1,31 @@
+<%
+/**
+ * 第三方统计。仅当配置了 ID 时才输出脚本，避免无谓请求。
+ * cfg 由 head.ejs 传入（monish_config() 的结果）。
+ */
+var analytics = (typeof cfg !== 'undefined' && cfg && cfg.analytics) ? cfg.analytics : {};
+var ga = analytics.google_analytics;
+var gauges = analytics.gauges;
+%>
+<% if (ga){ %>
+  <script async src="https://www.googletagmanager.com/gtag/js?id=<%= ga %>"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){ dataLayer.push(arguments); }
+    gtag('js', new Date());
+    gtag('config', '<%= ga %>');
+  </script>
+<% } else if (gauges){ %>
+  <script>
+    var _gauges = _gauges || [];
+    (function () {
+      var t = document.createElement('script');
+      t.async = true;
+      t.id = 'gauges-tracker';
+      t.setAttribute('data-site-id', '<%= gauges %>');
+      t.src = '//secure.gaug.es/track.js';
+      var s = document.getElementsByTagName('script')[0];
+      s.parentNode.insertBefore(t, s);
+    })();
+  </script>
+<% } %>

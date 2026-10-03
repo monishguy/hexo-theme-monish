@@ -1,0 +1,855 @@
+/* ==========================================================================
+   monish · 7/11 · post.css
+   文章页：目录 / .monish-prose 全量正文排版 / 代码高亮与复制按钮
+   / 版权 / 上下篇 / 评论容器
+   v2：正文 --font-body、标题 --font-display、所有小标签与代码 --font-mono。
+   代码块那套（code-toolbar / code-language / 行号槽 / --hl-* 令牌 / br 兜底）
+   按 v1.4 定稿保留，只换 v2 令牌与圆角。
+   ========================================================================== */
+
+/* ----------------------------------------------------------------- 目录 */
+.post-toc {
+  margin-bottom: var(--space-6);
+  padding: var(--space-4) var(--space-5);
+  border-radius: var(--radius-md);
+  background: var(--surface-3);
+}
+
+.post-toc-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: var(--fs-label);
+  letter-spacing: var(--ls-label);
+  text-transform: uppercase;
+}
+
+.post-toc-toggle::after {
+  content: "\25BE";
+  font-size: .8em;
+  color: var(--text-muted);
+  transition: transform var(--speed-fast) var(--ease);
+}
+
+.post-toc-toggle[aria-expanded="false"]::after {
+  transform: rotate(-90deg);
+}
+
+/* 默认展开（无 JS 也可读）；JS 折叠时把 aria-expanded 置 false，
+   同时兼容 .post-toc.is-open 作为展开态标记。 */
+.post-toc-nav {
+  display: block;
+  margin-top: var(--space-3);
+}
+
+.post-toc:not(.is-open) .post-toc-toggle[aria-expanded="false"] + .post-toc-nav {
+  display: none;
+}
+
+.post-toc .toc,
+.monish-prose .toc {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: .9375rem;
+  line-height: 1.75;
+}
+
+.toc ol {
+  margin: 0;
+  padding-inline-start: var(--space-4);
+  list-style: none;
+}
+
+.toc li {
+  margin: 0;
+}
+
+.toc a {
+  display: block;
+  padding: .22em 0 .22em .7em;
+  border-inline-start: 2px solid transparent;
+  color: var(--text-muted);
+  transition: color var(--speed-fast) var(--ease), border-color var(--speed-fast) var(--ease);
+}
+
+.toc a:hover {
+  color: var(--accent-strong);
+  border-inline-start-color: var(--accent);
+  text-decoration: none;
+}
+
+.toc a.is-active {
+  color: var(--accent-strong);
+  border-inline-start-color: var(--accent);
+  font-weight: 500;
+}
+
+/* =========================================================== 正文排版 ==== */
+.monish-prose {
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: var(--fs-body);
+  line-height: var(--lh-body);
+  overflow-wrap: break-word;
+}
+
+.monish-prose > :first-child {
+  margin-top: 0;
+}
+
+.monish-prose > :last-child {
+  margin-bottom: 0;
+}
+
+/* 标题：超粗无衬线（--font-display） */
+.monish-prose h2,
+.monish-prose h3,
+.monish-prose h4,
+.monish-prose h5,
+.monish-prose h6 {
+  margin: var(--space-7) 0 var(--space-4);
+  color: var(--text);
+  font-family: var(--font-display);
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -.01em;
+  text-wrap: pretty;
+}
+
+.monish-prose h2 {
+  font-size: clamp(1.5rem, 3vw, 2rem);
+}
+
+.monish-prose h3 {
+  font-size: 1.3rem;
+}
+
+.monish-prose h4 {
+  font-size: 1.1rem;
+}
+
+.monish-prose h5,
+.monish-prose h6 {
+  font-size: 1rem;
+}
+
+/* 段落 / 链接（正文里的链接是绿色点缀） */
+.monish-prose p {
+  margin: 0 0 var(--space-5);
+}
+
+/* 正文链接：下划线常驻（可读性），hover 时颜色加深 + 下划线「加粗浮起」。
+   用 text-decoration-* 过渡而不是重画一条 ::after，是因为正文里链接会换行，
+   多重背景/伪元素方案在断行处会断掉。 */
+.monish-prose a {
+  color: var(--accent-strong);
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--accent) 50%, transparent);
+  text-decoration-thickness: 1px;
+  text-underline-offset: .22em;
+  transition:
+    color var(--speed-fast) var(--ease-out-expo),
+    text-decoration-color var(--speed-fast) var(--ease-out-expo),
+    text-decoration-thickness var(--speed-fast) var(--ease-out-expo);
+}
+
+.monish-prose a:hover {
+  color: var(--accent-strong);
+  text-decoration-color: var(--accent);
+  text-decoration-thickness: 2px;
+}
+
+/* 正文里指向外站的链接：hover 时右上角的小箭头轻微外移（motion-web 的
+   「可发现性」原则 —— 交互元素要在被点之前就告诉人能点） */
+.monish-prose a[target="_blank"]::after {
+  content: "↗";
+  display: inline-block;
+  margin-inline-start: .12em;
+  font-size: .82em;
+  transition: transform var(--speed-fast) var(--ease-out-expo);
+}
+
+.monish-prose a[target="_blank"]:hover::after {
+  transform: translate(2px, -2px);
+}
+
+.monish-prose em,
+.monish-prose i {
+  font-style: italic;
+}
+
+.monish-prose strong,
+.monish-prose b {
+  font-weight: 600;
+  color: var(--text);
+}
+
+.monish-prose del {
+  color: var(--text-muted);
+}
+
+/* 列表 */
+.monish-prose ul,
+.monish-prose ol {
+  margin: 0 0 var(--space-5);
+  padding-inline-start: 1.4em;
+}
+
+.monish-prose ul {
+  list-style: disc;
+}
+
+.monish-prose ol {
+  list-style: decimal;
+}
+
+.monish-prose ul ul {
+  list-style: circle;
+}
+
+.monish-prose li {
+  margin: .3em 0;
+}
+
+.monish-prose li > ul,
+.monish-prose li > ol {
+  margin-top: .3em;
+  margin-bottom: 0;
+}
+
+.monish-prose li::marker {
+  color: var(--accent-strong);
+}
+
+.monish-prose li > p {
+  margin-bottom: var(--space-3);
+}
+
+/* 引用 */
+.monish-prose blockquote {
+  margin: 0 0 var(--space-5);
+  padding: var(--space-4) var(--space-5);
+  border-inline-start: 2px solid var(--accent);
+  border-radius: 0 var(--radius-md) var(--radius-md) 0;
+  background: var(--surface-3);
+  color: var(--text);
+}
+
+.monish-prose blockquote > :last-child {
+  margin-bottom: 0;
+}
+
+.monish-prose blockquote cite {
+  display: block;
+  margin-top: var(--space-2);
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: var(--fs-label);
+  letter-spacing: var(--ls-label);
+  font-style: normal;
+}
+
+/* 行内代码 */
+.monish-prose code {
+  padding: .1em .38em;
+  border-radius: 4px;
+  background: var(--surface-3);
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: .88em;
+  word-break: break-word;
+}
+
+/* 代码块（裸 <pre>，没有 <code> —— 必须显式声明等宽，契约 §5.3） */
+.monish-prose pre {
+  position: relative;
+  margin: 0 0 var(--space-5);
+  padding: var(--space-4) var(--space-5);
+  border-radius: var(--radius-lg);
+  background: var(--surface-3);
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: .875rem;
+  line-height: 1.75;
+  /* 长代码块自己横向滚动，不撑破页面 */
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.monish-prose pre code {
+  display: block;
+  padding: 0;
+  border-radius: 0;
+  background: none;
+  color: inherit;
+  font-size: inherit;
+  white-space: pre;
+  word-break: normal;
+}
+
+/* Hexo figure.highlight —— 紧凑块：细行号槽 + 语言标签 + 令牌着色 */
+.monish-prose .highlight,
+.highlight {
+  position: relative;
+  margin: 0 0 var(--space-5);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface-3);
+  /* 只负责裁圆角；横向滚动交给内部的 .code-scroll */
+  overflow: hidden;
+}
+
+/* 横向滚动容器：套在 <table> 外面（由 scripts/helpers.js 构建期注入）。
+   为什么不直接让 pre 滚：table 是 width:100% 的 auto 布局，长行会把**表格本身**
+   撑得比容器宽，于是 .highlight 的 overflow:hidden 直接把它裁掉、一个滚动条都不出现。
+   套一层容器让表格自由变宽、由这层滚，同时行号槽还能 sticky 在最左。
+   工具条留在容器外，所以横滚时语言标签和复制按钮不会跟着跑掉。 */
+.code-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+  /* html 上那条浅色 scrollbar-color 在这里太淡（--line 压 --surface-3 几乎看不见），
+     单独加深，让人一眼看出「这里能左右滑」。 */
+  scrollbar-color: var(--text-faint) transparent;
+}
+
+/* WebKit：给横向滚动条一个可见的胶囊滑块 */
+.code-scroll::-webkit-scrollbar {
+  height: 10px;
+}
+
+.code-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.code-scroll::-webkit-scrollbar-thumb {
+  border: 3px solid transparent;
+  border-radius: var(--radius-pill);
+  background: var(--line);
+  background-clip: padding-box;
+}
+
+.code-scroll::-webkit-scrollbar-thumb:hover {
+  background: var(--text-faint);
+  background-clip: padding-box;
+}
+
+/* figure.highlight 里的 pre 不再自己滚（外层 .code-scroll 负责），
+   否则会出现两条横向滚动条。这里要压过上面的 .monish-prose pre。 */
+.monish-prose .highlight pre,
+.highlight pre {
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  font-family: var(--font-mono);
+  font-size: .875rem;
+  line-height: 1.7;
+  overflow: visible;
+}
+
+/* Hexo 高亮产物每行后跟一个 <br>，最后一个会造成尾部空行 —— 去掉
+   （hljs 模式下 <br> 在 <pre><code> 里，所以两种结构都要覆盖） */
+.highlight pre > br:last-child,
+.highlight pre > code > br:last-child,
+.highlight pre > code > span.line:last-child + br:last-child {
+  display: none;
+}
+
+/* 代码块工具条：语言名 + 复制按钮同处右上角，绝对定位不占正文高度。
+   由 after_post_render filter 注入（见 scripts/helpers.js），复制按钮由 JS 追加。 */
+.code-toolbar {
+  position: absolute;
+  top: 0;
+  inset-inline-end: 0;
+  z-index: 2;
+  display: flex;
+  align-items: stretch;
+}
+
+.code-language {
+  padding: 3px var(--space-3);
+  border-inline-start: 1px solid var(--border);
+  border-block-end: 1px solid var(--border);
+  border-end-start-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text-faint);
+  font-family: var(--font-mono);
+  font-size: var(--fs-label);
+  line-height: 1.4;
+  letter-spacing: var(--ls-label);
+  text-transform: uppercase;
+  white-space: nowrap;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* 工具条里的复制按钮：常显、与语言标签同排，不再绝对定位 */
+.code-toolbar .code-copy {
+  position: static;
+  inset: auto;
+  opacity: 1;
+  padding: 3px var(--space-3);
+  border: 0;
+  border-inline-start: 1px solid var(--border);
+  border-block-end: 1px solid var(--border);
+  border-radius: 0;
+  background: var(--surface);
+  font-family: var(--font-mono);
+  font-size: var(--fs-label);
+  line-height: 1.4;
+  letter-spacing: var(--ls-label);
+}
+
+.code-toolbar .code-copy:hover,
+.code-toolbar .code-copy.is-copied {
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+}
+
+/* 首行代码让开工具条高度（用相邻兄弟选择器，无需 :has()） */
+.highlight > .code-toolbar + table td.code pre,
+.highlight > .code-toolbar + table td.gutter pre {
+  padding-block-start: calc(var(--space-2) + 1.5em);
+}
+
+.highlight figcaption,
+.highlight .caption {
+  padding: var(--space-2) var(--space-4);
+  border-bottom: 1px solid var(--border);
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: var(--fs-label);
+}
+
+/* 表格：高亮块内部的 table/td 必须完全去边框去内边距。
+   注意 `.monish-prose td`（本文件后面的表格规则）与 `.highlight td` 同优先级，
+   靠源码顺序会赢；所以这里用 `.monish-prose .highlight …` 提高优先级。 */
+.monish-prose .highlight table,
+.highlight table {
+  width: 100%;
+  margin: 0;
+  border: 0;
+  border-collapse: collapse;
+  font-size: inherit;
+  line-height: inherit;
+}
+
+.monish-prose .highlight td,
+.highlight td {
+  padding: 0;
+  border: 0;
+  vertical-align: top;
+}
+
+/* 代码正文 */
+.highlight td.code {
+  width: 100%;
+}
+
+.highlight td.code pre {
+  padding: var(--space-3) var(--space-4);
+}
+
+/* 行号槽：贴紧、只留必要宽度，不再是一条宽白带。
+   横向滚动时它 sticky 在最左，代码从底下滑过（所以要给不透明底色）。 */
+.highlight td.gutter {
+  width: 1%;
+  white-space: nowrap;
+  position: sticky;
+  inset-inline-start: 0;
+  z-index: 2;
+  background: var(--surface-3);
+}
+
+.highlight td.gutter pre {
+  padding: var(--space-3) var(--space-2) var(--space-3) var(--space-3);
+  border-inline-end: 1px solid var(--border);
+  color: var(--text-faint);
+  font-family: var(--font-mono);
+  font-size: .75rem;
+  /* 行号与代码行严格对齐：显式声明，避免等宽字体里的自定义行高漂移 */
+  line-height: 1.98;
+  text-align: end;
+  /* 行号用等宽数字，多位数不会左右跳 */
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+  user-select: none;
+  opacity: .7;
+}
+
+/* ---------------------------------------------------- 语法高亮令牌（浅色） */
+.highlight {
+  --hl-keyword: #6E57A8;
+  --hl-string: #4C7A5C;
+  --hl-comment: #8A938C;
+  --hl-number: #A9703F;
+  --hl-title: #2C6A70;
+  --hl-name: #2F5F9E;
+  --hl-attr: #8A5A2B;
+  --hl-type: #2C6A70;
+  --hl-builtin: #6E57A8;
+  --hl-deletion: #A64B4B;
+  --hl-addition: #3F7A4F;
+}
+
+/* 深色令牌（含无 JS 的自动兜底） */
+html[data-theme="dark"] .highlight {
+  --hl-keyword: #C4A7F5;
+  --hl-string: #9FCFA9;
+  --hl-comment: #8B958C;
+  --hl-number: #E3B27C;
+  --hl-title: #86C9CF;
+  --hl-name: #9CC2F0;
+  --hl-attr: #D9B07E;
+  --hl-type: #86C9CF;
+  --hl-builtin: #C4A7F5;
+  --hl-deletion: #E39A9A;
+  --hl-addition: #9FCFA9;
+}
+
+@media (prefers-color-scheme: dark) {
+  html:not([data-theme]) .highlight {
+    --hl-keyword: #C4A7F5;
+    --hl-string: #9FCFA9;
+    --hl-comment: #8B958C;
+    --hl-number: #E3B27C;
+    --hl-title: #86C9CF;
+    --hl-name: #9CC2F0;
+    --hl-attr: #D9B07E;
+    --hl-type: #86C9CF;
+    --hl-builtin: #C4A7F5;
+    --hl-deletion: #E39A9A;
+    --hl-addition: #9FCFA9;
+  }
+}
+
+.highlight .comment,
+.highlight .quote,
+.highlight .hljs-comment,
+.highlight .hljs-quote {
+  color: var(--hl-comment);
+  font-style: italic;
+}
+
+.highlight .keyword,
+.highlight .selector-tag,
+.highlight .literal,
+.highlight .doctag,
+.highlight .meta,
+.highlight .hljs-keyword,
+.highlight .hljs-selector-tag,
+.highlight .hljs-literal,
+.highlight .hljs-doctag,
+.highlight .hljs-meta {
+  color: var(--hl-keyword);
+  font-weight: 600;
+}
+
+/* built_in（print / str / console 之类）用类型色，不要和关键字一样重 */
+.highlight .built_in,
+.highlight .hljs-built_in {
+  color: var(--hl-type);
+}
+
+/* 标点保持弱化，避免整块代码花掉 */
+.highlight .punctuation,
+.highlight .hljs-punctuation {
+  color: var(--text-muted);
+}
+
+.highlight .string,
+.highlight .regexp,
+.highlight .addition,
+.highlight .subst,
+.highlight .hljs-string,
+.highlight .hljs-regexp,
+.highlight .hljs-addition,
+.highlight .hljs-subst,
+.highlight .hljs-char.escape_ {
+  color: var(--hl-string);
+}
+
+.highlight .number,
+.highlight .symbol,
+.highlight .bullet,
+.highlight .hljs-number,
+.highlight .hljs-symbol,
+.highlight .hljs-bullet {
+  color: var(--hl-number);
+}
+
+.highlight .title,
+.highlight .section,
+.highlight .function,
+.highlight .hljs-title,
+.highlight .hljs-section,
+.highlight .hljs-function .hljs-title {
+  color: var(--hl-title);
+}
+
+.highlight .name,
+.highlight .selector-id,
+.highlight .selector-class,
+.highlight .hljs-name,
+.highlight .hljs-selector-id,
+.highlight .hljs-selector-class,
+.highlight .hljs-selector-pseudo {
+  color: var(--hl-name);
+}
+
+.highlight .attr,
+.highlight .attribute,
+.highlight .variable,
+.highlight .template-variable,
+.highlight .tag,
+.highlight .params,
+.highlight .hljs-attr,
+.highlight .hljs-attribute,
+.highlight .hljs-variable,
+.highlight .hljs-template-variable,
+.highlight .hljs-tag,
+.highlight .hljs-params,
+.highlight .hljs-property {
+  color: var(--hl-attr);
+}
+
+.highlight .type,
+.highlight .class,
+.highlight .hljs-type,
+.highlight .hljs-class .hljs-title,
+.highlight .hljs-selector-attr,
+.highlight .hljs-selector-tag {
+  color: var(--hl-type);
+}
+
+.highlight .deletion,
+.highlight .hljs-deletion {
+  color: var(--hl-deletion);
+  text-decoration: line-through;
+}
+
+.highlight .addition,
+.highlight .hljs-addition {
+  color: var(--hl-addition);
+}
+
+.highlight .emphasis {
+  font-style: italic;
+}
+
+.highlight .strong {
+  font-weight: 600;
+}
+
+/* 代码复制按钮（由 JS 插入，见契约 §7.6；无工具条时退回 .highlight / pre 右上角） */
+.code-copy {
+  position: absolute;
+  top: var(--space-2);
+  inset-inline-end: var(--space-2);
+  z-index: 2;
+  padding: .3em .8em;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: var(--fs-label);
+  line-height: 1.7;
+  opacity: 0;
+  transition: opacity var(--speed-fast) var(--ease), color var(--speed-fast) var(--ease);
+}
+
+.monish-prose pre:hover .code-copy,
+.highlight:hover .code-copy,
+.code-copy:focus-visible {
+  opacity: 1;
+}
+
+/* 复制成功的确认反馈：用 linear() 手写的弹簧曲线做一次轻微过冲-落定。
+   这是「小元件拿弹簧手感」的用法 —— 不必为了一个按钮引动画库。 */
+.code-copy.is-copied {
+  animation: monish-confirm var(--speed) var(--ease-spring) both;
+}
+
+@keyframes monish-confirm {
+  0% {
+    transform: scale(1);
+  }
+
+  45% {
+    transform: scale(1.08);
+  }
+
+  100% {
+    transform: scale(1);
+  }
+}
+
+.code-copy:hover {
+  color: var(--accent-strong);
+}
+
+/* 复制成功反馈（JS 加 1.6s 的 .is-copied）：浅绿底 + 强调色文字，
+   并强制常显，指针移开也能看到结果 */
+.code-copy.is-copied {
+  opacity: 1;
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+}
+
+/* 表格 */
+.monish-prose table {
+  width: 100%;
+  margin: 0 0 var(--space-5);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: .9375rem;
+  line-height: 1.7;
+}
+
+.monish-prose th,
+.monish-prose td {
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--border);
+  text-align: start;
+  vertical-align: top;
+}
+
+.monish-prose thead th {
+  background: var(--surface-3);
+  color: var(--text);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.monish-prose tbody tr:nth-child(even) {
+  background: color-mix(in srgb, var(--surface-3) 60%, transparent);
+}
+
+.monish-prose table caption {
+  margin-bottom: var(--space-2);
+  color: var(--text-muted);
+  font-size: .875rem;
+}
+
+/* 图片 / 图注 */
+.monish-prose img {
+  max-width: 100%;
+  height: auto;
+  margin-inline: auto;
+  border-radius: var(--radius-md);
+}
+
+.monish-prose figure {
+  margin: 0 0 var(--space-5);
+}
+
+.monish-prose figcaption {
+  margin-top: var(--space-2);
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: var(--fs-label);
+  letter-spacing: var(--ls-label);
+  text-align: center;
+}
+
+.monish-prose iframe,
+.monish-prose video {
+  max-width: 100%;
+}
+
+/* 分隔线 */
+.monish-prose hr {
+  width: 56px;
+  margin: var(--space-7) auto;
+  border: 0;
+  border-top: 2px solid var(--line);
+}
+
+/* ----------------------------------------------------------------- 页脚 */
+.post-copyright {
+  padding: var(--space-4) var(--space-5);
+  border-radius: var(--radius-md);
+  background: var(--surface-3);
+  color: var(--text-muted);
+  font-size: .9375rem;
+  line-height: 1.8;
+}
+
+.post-copyright a {
+  color: var(--text);
+  border-bottom: 1px solid var(--line);
+}
+
+.post-copyright a:hover {
+  color: var(--accent-strong);
+  border-bottom-color: var(--accent);
+}
+
+.post-nav {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-4);
+  margin-top: var(--space-6);
+}
+
+.post-nav-item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+  padding: var(--space-4) var(--space-5);
+  border-radius: var(--radius-md);
+  background: var(--surface-3);
+  transition: background-color var(--speed-fast) var(--ease), box-shadow var(--speed-fast) var(--ease);
+}
+
+.post-nav-item:hover {
+  background: var(--accent-soft);
+  text-decoration: none;
+}
+
+.post-nav-next {
+  text-align: end;
+}
+
+/* 只有「下一篇」时（最新一篇没有上一篇），它要占右列而不是缩在左边 */
+.post-nav-next:first-child {
+  grid-column: 2;
+}
+
+/* 只有「上一篇」时占左列（默认行为，显式写出便于阅读） */
+.post-nav-prev:last-child {
+  grid-column: 1;
+}
+
+.post-nav-label {
+  color: var(--text-faint);
+  font-family: var(--font-mono);
+  font-size: var(--fs-label);
+  letter-spacing: var(--ls-label);
+  text-transform: uppercase;
+}
+
+.post-nav-title {
+  color: var(--text);
+  font-weight: 500;
+  line-height: 1.6;
+}
+
+.post-nav-item:hover .post-nav-title {
+  color: var(--accent-strong);
+}
+
+.comments {
+  margin-top: var(--space-7);
+}
+
+.comments:empty {
+  margin-top: 0;
+}

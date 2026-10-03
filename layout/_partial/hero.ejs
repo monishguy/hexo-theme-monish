@@ -1,0 +1,62 @@
+<%
+/**
+ * 首页首屏 hero —— 全屏强调色 + 标题/副标题淡入上浮 + 下滑提示。
+ * 设计契约 §3.4。
+ */
+var cfg = monish_config();
+var hero = cfg.hero;
+
+var title = hero.slogan || cfg.site.title;
+var subtitle = hero.subtitle || cfg.site.subtitle;
+var scrollText = hero.scroll_hint_text || monish_t('scroll_down');
+var layoutClass = 'hero--' + (['full', 'center', 'banner'].indexOf(hero.layout) >= 0 ? hero.layout : 'full');
+var bgClass = 'hero-bg--' + (hero.background === 'image' && hero.background_image ? 'image' : 'accent');
+var bgStyle = '';
+var overlayAlpha = Math.min(1, Math.max(0, parseFloat(hero.overlay)));
+if (Number.isNaN(overlayAlpha)) overlayAlpha = 0.18;
+var heroStyle = '--hero-height:' + (hero.height || '100vh') + ';--hero-overlay-alpha:' + overlayAlpha;
+if (hero.background === 'image' && hero.background_image) {
+  bgStyle = 'background-image:url(' + url_for(hero.background_image) + ')';
+}
+var totalPosts = site.posts ? site.posts.length : 0;
+var sinceYear = cfg.footer.since;
+if (!sinceYear && site.posts && site.posts.length) {
+  var oldest = site.posts.sort('date').first();
+  sinceYear = oldest && oldest.date ? oldest.date.format('YYYY') : '';
+}
+var runningYears = sinceYear ? (new Date().getFullYear() - parseInt(sinceYear, 10)) : 0;
+%>
+<section class="hero <%= layoutClass %>" id="hero" aria-label="<%= cfg.site.title %>" style="<%= heroStyle %>">
+  <div class="hero-bg <%= bgClass %>" aria-hidden="true" style="<%= bgStyle %>"></div>
+  <div class="hero-overlay" aria-hidden="true"></div>
+
+  <% if (hero.particles){ %>
+    <div class="hero-particles" aria-hidden="true">
+      <% for (var i = 0; i < 6; i++){ %>
+        <span class="hero-particle" style="--i:<%= i %>"></span>
+      <% } %>
+    </div>
+  <% } %>
+
+  <div class="hero-inner">
+    <h1 class="hero-title"><%= title %></h1>
+    <% if (subtitle){ %>
+      <p class="hero-subtitle"><%= subtitle %></p>
+    <% } %>
+    <div class="hero-meta">
+      <% if (totalPosts){ %>
+        <span class="hero-meta-item"><%= totalPosts %> <%= monish_t('total_posts') %></span>
+      <% } %>
+      <% if (sinceYear && runningYears > 0){ %>
+        <span class="hero-meta-item"><%= monish_t('site_running', runningYears) %></span>
+      <% } %>
+    </div>
+  </div>
+
+  <% if (hero.scroll_hint !== false){ %>
+    <a class="hero-scroll" id="hero-scroll" href="#latest-posts">
+      <span class="hero-scroll-text"><%= scrollText %></span>
+      <span class="hero-scroll-icon fa fa-angle-down" aria-hidden="true"></span>
+    </a>
+  <% } %>
+</section>

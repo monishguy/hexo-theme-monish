@@ -1,0 +1,113 @@
+<%
+/**
+ * 文章页：一张内容卡。设计契约 §3.5。
+ */
+var cfg = monish_config();
+var dateFormat = cfg.posts.date_format || config.date_format || 'YYYY-MM-DD';
+var categories = page.categories ? page.categories.toArray() : [];
+var tags = page.tags ? page.tags.toArray() : [];
+var words = cfg.post.word_count ? monish_word_count(page.content) : 0;
+var minutes = cfg.post.reading_time ? monish_reading_time(page.content) : 0;
+var hasToc = cfg.post.toc && /<h[1-6][^>]*id=/i.test(page.content || '');
+var author = page.author || cfg.site.author || cfg.site.title;
+%>
+<article class="card" id="content-card" itemscope itemtype="https://schema.org/BlogPosting">
+  <header class="card-head">
+    <time class="post-date" datetime="<%= date_xml(page.date) %>" itemprop="datePublished"><%= monish_date_label(page.date) %></time>
+    <h1 class="card-title" itemprop="name headline"><%= page.title %></h1>
+
+    <% if (tags.length){ %>
+      <div class="post-tags">
+        <% tags.forEach(function (item){ %>
+          <a class="tag-chip" href="<%- url_for(item.path) %>">#<%= item.name %></a>
+        <% }); %>
+      </div>
+    <% } %>
+
+    <dl class="card-meta">
+      <div class="meta-item">
+        <dt><%= monish_t('author') %></dt>
+        <dd><%= author %></dd>
+      </div>
+      <% if (minutes){ %>
+        <div class="meta-item">
+          <dt><%= monish_t('reading_time') %></dt>
+          <dd><%= minutes %> <%= monish_t('minutes') %></dd>
+        </div>
+      <% } %>
+      <% if (words){ %>
+        <div class="meta-item">
+          <dt><%= monish_t('word_count') %></dt>
+          <dd><%= words %></dd>
+        </div>
+      <% } %>
+      <% if (categories.length){ %>
+        <div class="meta-item">
+          <dt><%= monish_t('category') %></dt>
+          <dd>
+            <% categories.forEach(function (cat, i){ %>
+              <a href="<%- url_for(cat.path) %>" itemprop="articleSection"><%= cat.name %></a><%= i < categories.length - 1 ? ', ' : '' %>
+            <% }); %>
+          </dd>
+        </div>
+      <% } %>
+      <% if (cfg.post.updated && page.updated && page.updated.valueOf() !== page.date.valueOf()){ %>
+        <div class="meta-item">
+          <dt><%= monish_t('updated_on') %></dt>
+          <dd><time datetime="<%= date_xml(page.updated) %>" itemprop="dateModified"><%= date(page.updated, dateFormat) %></time></dd>
+        </div>
+      <% } %>
+    </dl>
+  </header>
+
+  <% if (hasToc){ %>
+    <div class="post-toc" id="post-toc">
+      <button class="post-toc-toggle" id="post-toc-toggle" type="button" aria-expanded="true" aria-controls="post-toc-nav">
+        <span class="fa fa-list-ul" aria-hidden="true"></span>
+        <%= monish_t('toc') %>
+      </button>
+      <nav class="post-toc-nav" id="post-toc-nav" aria-label="<%= monish_t('toc') %>">
+        <%- toc(page.content, {
+          class: 'toc',
+          list_number: false,
+          max_depth: cfg.post.toc_depth || 3
+        }) %>
+      </nav>
+    </div>
+  <% } %>
+
+  <div class="card-body monish-prose" itemprop="articleBody">
+    <%- page.content %>
+  </div>
+
+  <footer class="card-foot">
+    <% if (cfg.post.copyright !== false){ %>
+      <div class="post-copyright">
+        <p class="post-copyright-line">
+          <span class="post-copyright-label"><%= monish_t('copyright') %></span>
+          <span class="post-copyright-value"><a href="<%- full_url_for(page.path) %>"><%- full_url_for(page.path) %></a></span>
+        </p>
+        <p class="post-copyright-note"><%= monish_t('license_note') %></p>
+      </div>
+    <% } %>
+
+    <% if (cfg.post.prev_next !== false && (page.prev || page.next)){ %>
+      <nav class="post-nav" aria-label="<%= monish_t('prev_post') %> / <%= monish_t('next_post') %>">
+        <% if (page.prev){ %>
+          <a class="post-nav-item post-nav-prev" href="<%- url_for(page.prev.path) %>" rel="prev">
+            <span class="post-nav-label"><span class="fa fa-angle-left" aria-hidden="true"></span> <%= monish_t('prev_post') %></span>
+            <span class="post-nav-title"><%= page.prev.title %></span>
+          </a>
+        <% } %>
+        <% if (page.next){ %>
+          <a class="post-nav-item post-nav-next" href="<%- url_for(page.next.path) %>" rel="next">
+            <span class="post-nav-label"><%= monish_t('next_post') %> <span class="fa fa-angle-right" aria-hidden="true"></span></span>
+            <span class="post-nav-title"><%= page.next.title %></span>
+          </a>
+        <% } %>
+      </nav>
+    <% } %>
+
+    <%- partial('_partial/comments') %>
+  </footer>
+</article>

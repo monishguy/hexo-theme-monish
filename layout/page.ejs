@@ -1,0 +1,55 @@
+<%
+/**
+ * 独立页面（about / friends / topics / 自定义页）。设计契约 §3.5。
+ *
+ * 特例：source/tags/index.md 与 source/categories/index.md 属于「独立页」，
+ * Hexo 给它们套 page 布局（不会走 layout/tag.ejs、layout/category.ejs）。
+ * 这里按路径识别，改用与归档页相同的 partial 渲染标签云 / 分类卡片，
+ * 保证 /tags/、/categories/ 观感一致（不修改任何用户文章）。
+ */
+var cfg = monish_config();
+var pagePath = String(page.path || '').replace(/^\/+/, '');
+var isTagIndex = pagePath === 'tags/' || pagePath === 'tags/index.html';
+var isCategoryIndex = pagePath === 'categories/' || pagePath === 'categories/index.html';
+var isTermIndex = isTagIndex || isCategoryIndex;
+var pageHeading = page.title;
+if (isTagIndex) pageHeading = monish_t('tags');
+else if (isCategoryIndex) pageHeading = monish_t('categories');
+var hasToc = page.toc && cfg.post.toc && /<h[1-6][^>]*id=/i.test(page.content || '');
+%>
+<article class="card" id="content-card" itemscope itemtype="https://schema.org/Article">
+  <header class="card-head">
+    <h1 class="card-title" itemprop="name"><%= pageHeading %></h1>
+    <% if (page.description){ %>
+      <p class="card-description"><%= page.description %></p>
+    <% } %>
+  </header>
+
+  <% if (isTermIndex){ %>
+    <div class="card-body">
+      <% if (isTagIndex){ %>
+        <%- partial('_partial/tag-list') %>
+      <% } else { %>
+        <%- partial('_partial/category-list') %>
+      <% } %>
+    </div>
+  <% } else { %>
+    <% if (hasToc){ %>
+      <div class="post-toc" id="post-toc">
+        <button class="post-toc-toggle" id="post-toc-toggle" type="button" aria-expanded="true" aria-controls="post-toc-nav">
+          <span class="fa fa-list-ul" aria-hidden="true"></span>
+          <%= monish_t('toc') %>
+        </button>
+        <nav class="post-toc-nav" id="post-toc-nav" aria-label="<%= monish_t('toc') %>">
+          <%- toc(page.content, { class: 'toc', list_number: false, max_depth: cfg.post.toc_depth || 3 }) %>
+        </nav>
+      </div>
+    <% } %>
+
+    <div class="card-body monish-prose" itemprop="articleBody">
+      <%- page.content %>
+    </div>
+
+    <%- partial('_partial/comments') %>
+  <% } %>
+</article>

@@ -1,0 +1,365 @@
+/* ==========================================================================
+   monish · 9/11 · extras.css
+   图片灯箱 / 本地搜索浮层 / 轻提示
+   说明：#fff / #000 仅用于契约允许的“底衬”场景（灯箱遮罩、灯箱控件与图注、
+         搜索遮罩），保证深浅两种主题下都清晰可见。
+   ========================================================================== */
+
+/* ---------------------------------------------------------------- 灯箱 */
+.lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  /* 列方向：图片在上、图注在下；左右按钮是绝对定位，不参与排版 */
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-4);
+  padding: var(--space-6);
+  background: #000;
+  background: color-mix(in srgb, #000 88%, transparent);
+  cursor: zoom-out;
+}
+
+.lightbox[hidden] {
+  display: none;
+}
+
+.lightbox-image {
+  max-width: 92vw;
+  /* 给下方图注留出位置（100vh - 10rem ≈ 内边距 + 两行图注 + 间隙） */
+  max-height: min(88vh, calc(100vh - 10rem));
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  object-fit: contain;
+  cursor: default;
+}
+
+/* 缩略图放大入口（由 JS 加在 .monish-prose img 上） */
+.is-zoomable {
+  cursor: zoom-in;
+}
+
+.lightbox-close {
+  position: absolute;
+  top: var(--space-4);
+  inset-inline-end: var(--space-4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 50%;
+  background: #fff;
+  color: #000;
+  font-size: 1.5rem;
+  line-height: 1;
+  box-shadow: var(--shadow-pill);
+  transition: transform var(--speed-fast) var(--ease);
+}
+
+.lightbox-close:hover {
+  transform: scale(1.06);
+}
+
+/* 左右切换：与 .lightbox-close 同一套语言（44px 圆形）；
+   深色遮罩上用半透明底 + 浅色箭头，hover 加亮 */
+.lightbox-prev,
+.lightbox-next {
+  position: absolute;
+  top: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 50%;
+  background: color-mix(in srgb, #fff 14%, transparent);
+  color: #fff;
+  font-size: 1.5rem;
+  line-height: 1;
+  box-shadow: var(--shadow-pill);
+  transform: translateY(-50%);
+  transition: background-color var(--speed-fast) var(--ease), transform var(--speed-fast) var(--ease);
+}
+
+.lightbox-prev {
+  inset-inline-start: var(--space-4);
+}
+
+.lightbox-next {
+  inset-inline-end: var(--space-4);
+}
+
+.lightbox-prev:hover,
+.lightbox-next:hover {
+  background: color-mix(in srgb, #fff 28%, transparent);
+  transform: translateY(-50%) scale(1.06);
+}
+
+/* 图注：图片下方居中、浅色小字、最多两行 */
+.lightbox-caption {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  max-width: min(92vw, 40rem);
+  margin: 0;
+  overflow: hidden;
+  color: color-mix(in srgb, #fff 88%, transparent);
+  font-family: var(--font-mono);
+  font-size: var(--fs-label);
+  letter-spacing: var(--ls-label);
+  line-height: 1.7;
+  text-align: center;
+  text-wrap: pretty;
+}
+
+/* 没有 alt / title 时不占位（模板输出的是空 <p>） */
+.lightbox-caption:empty {
+  display: none;
+}
+
+/* ---------------------------------------------------------------- 搜索 */
+.search-box {
+  position: fixed;
+  top: 12vh;
+  inset-inline-start: 50%;
+  z-index: 210;
+  width: min(640px, calc(100vw - var(--space-5) * 2));
+  padding: var(--space-4);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
+  transform: translateX(-50%);
+}
+
+.search-box[hidden] {
+  display: none;
+}
+
+.search-box:not([hidden]) {
+  animation: monish-pop var(--speed) var(--ease-out-expo) both;
+}
+
+/* 搜索行：图标 + 输入框(flex:1) + 关闭按钮；边框由整行统一承担 */
+.search-field {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding-inline: var(--space-4) var(--space-1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-3);
+  transition: border-color var(--speed-fast) var(--ease), box-shadow var(--speed-fast) var(--ease);
+}
+
+.search-field:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 20%, transparent);
+}
+
+.search-field-icon {
+  flex: 0 0 auto;
+  color: var(--text-faint);
+  font-size: 1rem;
+  line-height: 1;
+  transition: color var(--speed-fast) var(--ease);
+}
+
+.search-field:focus-within .search-field-icon {
+  color: var(--accent-strong);
+}
+
+/* 独立使用的 .search-input 自带边框；放进 .search-field 后改由容器画边框 */
+.search-field .search-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding-inline: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.search-field .search-input:focus-visible {
+  outline: none;
+}
+
+.search-close {
+  flex: 0 0 auto;
+  color: var(--text-faint);
+}
+
+.search-input {
+  width: 100%;
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-3);
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: .9375rem;
+  line-height: 1.6;
+  transition: border-color var(--speed-fast) var(--ease);
+}
+
+/* 干掉浏览器给 type="search" 加的原生清除按钮（×）——
+   否则和模板里的 .search-close（退出搜索）并排出现两个 ×。 */
+.search-input::-webkit-search-cancel-button,
+.search-input::-webkit-search-decoration,
+.search-input::-webkit-search-results-button,
+.search-input::-webkit-search-results-decoration {
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.search-input::-ms-clear,
+.search-input::-ms-reveal {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+.search-input::placeholder {
+  color: var(--text-faint);
+}
+
+.search-input:focus {
+  border-color: var(--accent);
+  outline: none;
+}
+
+.search-input:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.search-results {
+  max-height: 56vh;
+  margin-top: var(--space-3);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.search-result-item {
+  display: block;
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  transition: background-color var(--speed-fast) var(--ease);
+}
+
+.search-result-item:hover,
+.search-result-item.is-active {
+  background: var(--surface-3);
+  text-decoration: none;
+}
+
+.search-result-title {
+  display: block;
+  color: var(--text);
+  font-weight: 600;
+  line-height: 1.6;
+}
+
+.search-result-item:hover .search-result-title,
+.search-result-item.is-active .search-result-title {
+  color: var(--accent-strong);
+}
+
+.search-result-excerpt {
+  display: block;
+  margin-top: 2px;
+  color: var(--text-muted);
+  font-size: .875rem;
+  line-height: 1.7;
+}
+
+.search-result-meta {
+  display: block;
+  margin-top: var(--space-1);
+  color: var(--text-faint);
+  font-family: var(--font-mono);
+  font-size: var(--fs-label);
+  letter-spacing: var(--ls-label);
+  text-transform: uppercase;
+}
+
+.search-mask {
+  position: fixed;
+  inset: 0;
+  z-index: 205;
+  background: #000;
+  background: color-mix(in srgb, #000 52%, transparent);
+}
+
+.search-mask[hidden] {
+  display: none;
+}
+
+/* 初始提示 / 无结果 */
+.search-hint,
+.search-empty {
+  margin: 0;
+  padding: var(--space-5) var(--space-4);
+  color: var(--text-faint);
+  font-family: var(--font-mono);
+  font-size: var(--fs-label);
+  letter-spacing: var(--ls-label);
+  text-transform: uppercase;
+  line-height: 1.8;
+  text-align: center;
+}
+
+/* -------------------------------------------------------------- 轻提示 */
+.toast {
+  position: fixed;
+  bottom: var(--space-7);
+  inset-inline-start: 50%;
+  z-index: 300;
+  padding: var(--space-2) var(--space-5);
+  border-radius: var(--radius-pill);
+  background: var(--text);
+  color: var(--surface);
+  box-shadow: var(--shadow-pill);
+  font-family: var(--font-mono);
+  font-size: var(--fs-label);
+  letter-spacing: var(--ls-label);
+  text-transform: uppercase;
+  line-height: 1.8;
+  transform: translateX(-50%) translateY(12px);
+  pointer-events: none;
+  /* 基态透明下沉；`.is-visible` 由 Monish.toast() 加上 */
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity var(--speed-fast) var(--ease), transform var(--speed-fast) var(--ease),
+    visibility 0s linear var(--speed-fast);
+}
+
+/* 显示态：位移 + 淡入；隐藏时 160ms 内回落
+   （JS 在移除 class 后 260ms 才置 hidden，淡出一定跑得完）。
+   transition-delay: 0s 让显示时 visibility 立即切换、不被基态的延迟挡住。 */
+.toast.is-visible {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) translateY(0);
+  animation: monish-pop var(--speed) var(--ease-out-expo);
+  transition-delay: 0s;
+}
+
+.toast.is-hidden {
+  display: none;
+}
+
+@keyframes monish-pop {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}

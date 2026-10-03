@@ -1,0 +1,154 @@
+<%
+/**
+ * <head>：防 FOUC 的主题引导脚本必须在任何样式表之前内联执行。
+ * 设计契约 §3 / §5 / §7 / §9（v2）。
+ */
+var cfg = monish_config();
+var appearance = cfg.appearance;
+var defaultMode = (appearance.default_mode || 'auto').toLowerCase();
+if (['auto', 'light', 'dark'].indexOf(defaultMode) < 0) defaultMode = 'auto';
+
+var pageTitle = page.title;
+if (is_archive()) {
+  pageTitle = monish_t('archives');
+  if (is_month()) pageTitle = pageTitle + ': ' + page.year + '/' + page.month;
+  else if (is_year()) pageTitle = pageTitle + ': ' + page.year;
+} else if (is_category()) {
+  pageTitle = monish_t('category') + ': ' + page.category;
+} else if (is_tag()) {
+  pageTitle = monish_t('tag') + ': ' + page.tag;
+}
+
+var metaDescription = page.description || (is_post() ? strip_html(page.excerpt || page.content || '').slice(0, 200) : cfg.site.description) || cfg.site.description;
+var metaKeywords = cfg.site.keywords || '';
+if (page.tags && page.tags.length) {
+  metaKeywords = page.tags.toArray().map(function (t) { return t.name; }).join(',');
+}
+
+/**
+ * 只注入「用户确实配置过」的值。
+ *
+ * 关键：默认值的唯一真相在 variables.css（`var(--user-x, 默认值)`）。
+ * 如果这里给每个变量都填一个兜底默认值，`--user-x` 就**永远有值**，
+ * variables.css 里那份默认值会被整个绕过 —— 于是改 variables.css 不生效
+ * （曾经因此让 --font-mono 的完整字体栈变成死代码）。
+ * 所以这里读 cfg.raw（未合并默认值的原始主题配置），空值一律不输出。
+ */
+var rawAppearance = (cfg.raw && cfg.raw.appearance) || {};
+var rootVars = [];
+if (rawAppearance.accent) rootVars.push('--user-accent:' + rawAppearance.accent);
+if (rawAppearance.accent_dark) rootVars.push('--user-accent-dark:' + rawAppearance.accent_dark);
+if (rawAppearance.radius) rootVars.push('--user-radius:' + rawAppearance.radius);
+/* 字体三角色（v2）；serif_font 作为 body_font 的兼容别名 */
+var displayFont = rawAppearance.display_font;
+var bodyFont = rawAppearance.body_font || rawAppearance.serif_font;
+var monoFont = rawAppearance.mono_font || rawAppearance.code_font;
+if (displayFont) rootVars.push('--user-font-display:' + displayFont);
+if (bodyFont) rootVars.push('--user-font-body:' + bodyFont);
+if (monoFont) rootVars.push('--user-font-mono:' + monoFont);
+
+/* theme-color 的 meta 需要具体色值（用合并过默认值的配置，保证一定有值） */
+var accent = appearance.accent || '#7FA88B';
+var accentDark = appearance.accent_dark || '#8FBF9F';
+
+/* webfont 交付方式：local（主题自带 woff2）| none（只用系统字体）| cdn（Google Fonts） */
+var webfont = String(appearance.webfont || 'local').toLowerCase();
+var displayFamily = String(appearance.display_font || 'Archivo Black').replace(/"/g, '');
+var bodyFamily = String(appearance.body_font || 'Inter').replace(/"/g, '');
+var monoFamily = String(appearance.mono_font || 'JetBrains Mono').replace(/"/g, '');
+%>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title><% if (pageTitle){ %><%= pageTitle %> | <% } %><%= cfg.site.title %></title>
+  <% if (metaDescription){ %>
+    <meta name="description" content="<%= escape_html(metaDescription) %>">
+  <% } %>
+  <% if (metaKeywords){ %>
+    <meta name="keywords" content="<%= escape_html(metaKeywords) %>">
+  <% } %>
+  <% if (cfg.site.author){ %>
+    <meta name="author" content="<%= escape_html(cfg.site.author) %>">
+  <% } %>
+  <meta name="theme-color" content="<%= accent %>" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="<%= accentDark %>" media="(prefers-color-scheme: dark)">
+  <meta name="color-scheme" content="light dark">
+  <%- meta_generator() %>
+  <%- open_graph({
+    twitter_id: cfg.raw.twitter,
+    fb_admins: cfg.raw.fb_admins,
+    fb_app_id: cfg.raw.fb_app_id,
+    description: metaDescription,
+    language: config.language
+  }) %>
+  <%# ---- 订阅源：站点未生成 feed 时不要输出指向 404 的链接 ---- %>
+  <% var siteFeed = (typeof monish_feed_path === 'function') ? monish_feed_path() : (config.feed || ''); %>
+  <% if (siteFeed){ %>
+    <%- feed_tag(siteFeed) %>
+  <% } %>
+  <% if (cfg.favicon){ %>
+    <%- favicon_tag(cfg.favicon) %>
+  <% } %>
+
+  <%# ---- 防 FOUC：必须在样式表与其它脚本之前执行 ---- %>
+  <script>
+    (function () {
+      var DEFAULT_MODE = '<%= defaultMode %>';
+      var root = document.documentElement;
+      var mode = DEFAULT_MODE;
+      try {
+        var saved = window.localStorage.getItem('monish-theme');
+        if (saved === 'light' || saved === 'dark' || saved === 'auto') mode = saved;
+      } catch (e) { /* 隐私模式等场景忽略 */ }
+      var resolved = mode;
+      if (mode === 'auto') {
+        resolved = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      }
+      root.setAttribute('data-theme-mode', mode);
+      root.setAttribute('data-theme', resolved);
+      root.style.colorScheme = resolved;
+    })();
+  </script>
+
+  <%# ---- 主题变量注入：只写用户真正配过的项，默认值由 variables.css 拥有 ---- %>
+  <style>
+    <% if (rootVars.length) { %>:root { <%- rootVars.join(';') %> }<% } %>
+    <% if (cfg.appearance.enable_transition){ %>
+    html.theme-transition, html.theme-transition * { transition: background-color .32s ease, color .32s ease, border-color .32s ease !important; }
+    <% } %>
+  </style>
+
+  <%# ---- 无 JS 兜底：保证首屏文字与列表始终可见（JS 正常时不会命中） ---- %>
+  <noscript>
+    <style>
+      .hero-title, .hero-subtitle, .hero-meta, .hero-scroll { opacity: 1 !important; transform: none !important; }
+      [data-reveal] { opacity: 1 !important; transform: none !important; }
+    </style>
+  </noscript>
+
+  <%# ---- webfont ----
+       local：主题自带的 7 个 woff2（latin 子集，约 155KB，零外链、离线可用）
+       none ：不引入，直接用系统字体栈
+       cdn  ：改用 Google Fonts（国内不稳，仅备选）
+       注意 fonts.css 必须排在最前（@font-face 先就位）。 -%>
+  <% if (webfont === 'local'){ %>
+    <link rel="stylesheet" href="<%- url_for('/css/fonts.css') %>">
+  <% } else if (webfont === 'cdn'){ %>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=<%= encodeURIComponent(displayFamily) %>&amp;family=<%= encodeURIComponent(bodyFamily) %>:wght@400;500;600&amp;family=<%= encodeURIComponent(monoFamily) %>:wght@400;500;700&amp;display=swap">
+  <% } %>
+
+  <%# ---- 主题样式：11 个文件，顺序与设计契约 §9 一致 ---- %>
+  <% ['variables','base','shell','hero','post-list','page','post','footer','extras','responsive'].forEach(function (name){ %>
+    <link rel="stylesheet" href="<%- url_for('/css/' + name + '.css') %>">
+  <% }); %>
+
+  <%# ---- Fork Awesome 图标字体（离线时优雅降级，不阻塞渲染） ---- %>
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fork-awesome@1.2.0/css/fork-awesome.min.css"
+        media="print" onload="this.media='all';this.onload=null">
+
+  <%- partial('_partial/analytics', {cfg: cfg}) %>
+</head>

@@ -1,0 +1,74 @@
+# monish テーマ言語パック —— 日本語（ja）
+# キー集合は themes/monish/DESIGN-CONTRACT.md §6 で凍結（v1.3、全 61 キー）。4 言語分を完全に一致させること。
+# 検証: node themes/monish/test/theme-unit-smoke.mjs
+
+home: ホーム
+archives: アーカイブ
+categories: カテゴリ
+category: カテゴリ
+tags: タグ
+tag: タグ
+about: このサイトについて
+friends: リンク集
+
+latest_posts: 最新記事
+all_posts: すべての記事
+no_posts: まだ記事がありません
+read_more: 続きを読む
+scroll_down: 下へスクロール
+back_to_top: トップへ戻る
+
+posted_on: 投稿日
+updated_on: 更新日
+reading_time: 読了時間
+minutes: 分
+words: 文字
+word_count: 文字数
+
+prev_post: 前の記事
+next_post: 次の記事
+toc: 目次
+toc_empty: 見出しがありません
+share: シェア
+comment: コメント
+comments: コメント
+no_comment: まだコメントはありません
+
+search: 検索
+search_placeholder: 記事を検索…
+search_empty: 該当する記事が見つかりません
+search_results: 検索結果
+
+powered_by: '%s で動作しています'
+theme: テーマ
+theme_light: ライト
+theme_dark: ダーク
+theme_auto: 自動
+mode_switch: テーマを切り替える
+rss: RSS
+
+menu: メニュー
+close: 閉じる
+expand: 拡大
+copied: コピーしました
+copy: コピー
+not_found: ページが見つかりません
+not_found_desc: お探しのページは存在しないか、移動された可能性があります。
+back_home: ホームへ戻る
+
+page: '%s ページ目'
+pages: ページ
+total_posts: 件の記事
+site_running: 'サイト開設から %s 年'
+topics: 特集
+author: 著者
+copyright: 著作権
+published: 公開日
+
+prev_page: 前へ
+next_page: 次へ
+more: もっと見る
+
+skip_to_content: 本文へスキップ
+sidebar: サイドバー
+license_note: 転載時は著者と出典を明記し、CC BY-NC-SA 4.0 に従ってください

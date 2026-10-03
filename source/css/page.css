@@ -1,0 +1,579 @@
+/* ==========================================================================
+   monish · 6/11 · page.css
+   内容卡（文章页 / 独立页 / 归档 / 分类 / 标签）/ 时间线 / 术语索引 / 标签云
+   面包屑 / 按钮 / 404
+   契约 §3.5；v1 的 .page-hero / .layout-2col / .sidebar-col / .widget* 已废弃。
+   ========================================================================== */
+
+/* ---------------------------------------------------------------- 内容卡 */
+/* 白卡 + 超大圆角 + 大范围柔和阴影（靠阴影浮起，不描边） */
+.card {
+  min-width: 0;
+  padding: clamp(26px, 4vw, 52px);
+  background: var(--surface);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+}
+
+.card-head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  margin-bottom: var(--space-6);
+  min-width: 0;
+}
+
+/* 卡片里的时间 / tag 全部走等宽小标签 */
+.post-date {
+  color: var(--text-faint);
+  font-family: var(--font-mono);
+  font-size: var(--fs-label);
+  letter-spacing: var(--ls-label);
+  text-transform: uppercase;
+}
+
+.card-title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: var(--fs-title);
+  line-height: var(--lh-display);
+  letter-spacing: var(--ls-display);
+  color: var(--text);
+  text-wrap: balance;
+}
+
+.post-tags {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+/* 元信息：<dl> 结构，dt 等宽大写、dd 正文 */
+.card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-6);
+  margin: 0;
+}
+
+.card-meta .meta-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  color: var(--text);
+}
+
+.card-meta dt {
+  color: var(--text-faint);
+  font-family: var(--font-mono);
+  font-size: var(--fs-label);
+  letter-spacing: var(--ls-label);
+  text-transform: uppercase;
+}
+
+.card-meta dd {
+  margin: 0;
+  color: var(--text);
+  font-size: .9375rem;
+  line-height: 1.6;
+}
+
+.card-body {
+  min-width: 0;
+  /* 阅读宽度：正文段落不超过约 72 个字符 */
+  max-width: 72ch;
+}
+
+.card-foot {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  margin-top: var(--space-7);
+  min-width: 0;
+}
+
+/* ------------------------------------------------- 归档 / 分类 / 标签清单 */
+.archive-groups {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-7);
+}
+
+.archive-group {
+  min-width: 0;
+}
+
+/* 年份：等宽大写小标签 + 细分隔线 */
+.archive-group-year {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin: 0 0 var(--space-3);
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--line);
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: var(--fs-label);
+  letter-spacing: var(--ls-label);
+  text-transform: uppercase;
+}
+
+.archive-group-list {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.archive-group-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: baseline;
+  gap: var(--space-1) var(--space-4);
+  min-width: 0;
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.archive-group-item:last-child {
+  border-bottom: 0;
+}
+
+.archive-group-link {
+  min-width: 0;
+  color: var(--text);
+  font-weight: 500;
+  line-height: 1.6;
+}
+
+.archive-group-link:hover {
+  color: var(--accent-strong);
+  text-decoration: none;
+}
+
+.archive-group-date,
+.archive-group-category {
+  flex: 0 0 auto;
+  color: var(--text-faint);
+  font-family: var(--font-mono);
+  font-size: var(--fs-label);
+  letter-spacing: var(--ls-label);
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.archive-group-category {
+  color: var(--text-muted);
+}
+
+/* ------------------------------------------------- 术语索引（标签 / 分类） */
+.term-index {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  list-style: none;
+  overflow: hidden;
+}
+
+.term-index-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  min-width: 0;
+  padding: var(--space-3) var(--space-5);
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+  transition: background-color var(--speed-fast) var(--ease);
+}
+
+.term-index-item:last-child {
+  border-bottom: 0;
+}
+
+.term-index-item:hover {
+  background: var(--surface-3);
+  text-decoration: none;
+}
+
+.term-index-name {
+  min-width: 0;
+  font-weight: 500;
+  overflow-wrap: break-word;
+}
+
+.term-index-count {
+  flex: 0 0 auto;
+  min-width: 2.2em;
+  padding: .2em .7em;
+  border-radius: var(--radius-pill);
+  background: var(--surface-3);
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: var(--fs-label);
+  text-align: center;
+  transition: color var(--speed-fast) var(--ease), background-color var(--speed-fast) var(--ease);
+}
+
+.term-index-item:hover .term-index-count {
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+}
+
+/* ------------------------------------------------- 分类卡（.term-card） */
+.category-groups {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(320px, 100%), 1fr));
+  gap: var(--space-5);
+}
+
+.term-card {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-width: 0;
+  padding: var(--space-5);
+  border-radius: var(--radius-md);
+  background: var(--surface-3);
+}
+
+.term-card-title {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin: 0 0 var(--space-3);
+  font-family: var(--font-body);
+  font-size: 1.0625rem;
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+.term-card-title a {
+  color: var(--text);
+}
+
+.term-card-title a:hover {
+  color: var(--accent-strong);
+  text-decoration: none;
+}
+
+.term-card-count {
+  flex: 0 0 auto;
+  padding: .2em .7em;
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: var(--fs-label);
+  font-weight: 500;
+}
+
+/* 计数徽标作为卡片的直接子元素时不要被 flex 拉伸成整条 */
+.term-card > .term-card-count {
+  align-self: flex-start;
+  margin-bottom: var(--space-3);
+}
+
+.term-card-list {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.term-card-item {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+  min-width: 0;
+  padding: var(--space-2) 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.term-card-item:last-child {
+  border-bottom: 0;
+}
+
+.term-card-link {
+  min-width: 0;
+  color: var(--text);
+  line-height: 1.6;
+}
+
+.term-card-link:hover {
+  color: var(--accent-strong);
+  text-decoration: none;
+}
+
+.term-card-date {
+  flex: 0 0 auto;
+  color: var(--text-faint);
+  font-family: var(--font-mono);
+  font-size: var(--fs-label);
+  letter-spacing: var(--ls-label);
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.term-card-more {
+  align-self: flex-start;
+  margin-top: auto;
+  padding-top: var(--space-3);
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: var(--fs-label);
+  letter-spacing: var(--ls-label);
+  text-transform: uppercase;
+}
+
+.term-card-more:hover {
+  color: var(--accent-strong);
+  text-decoration: none;
+}
+
+/* 箭头由模板里的 .fa 图标负责（契约 §3.2 的单箭头纪律），这里只补位移反馈 */
+.term-card-more .fa {
+  display: inline-block;
+  transition: transform var(--speed-fast) var(--ease);
+}
+
+.term-card-more:hover .fa {
+  transform: translateX(3px);
+}
+
+/* --------------------------------------------------------------- 标签云 */
+/* Hexo 内置 tagcloud() 直接输出一串裸锚点（带内联 font-size/color），
+   所以这里只给药丸外壳，刻意不写 font-size / color。 */
+.tagcloud-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-2);
+  margin: var(--space-1) 0 var(--space-5);
+}
+
+.tagcloud-wrap > a {
+  display: inline-flex;
+  align-items: baseline;
+  padding: .2em .8em;
+  border-radius: var(--radius-pill);
+  background: var(--surface-3);
+  font-family: var(--font-mono);
+  line-height: 1.9;
+  text-decoration: none;
+  transition: background-color var(--speed-fast) var(--ease), transform var(--speed-fast) var(--ease);
+}
+
+.tagcloud-wrap > a:hover {
+  background: var(--accent-soft);
+  transform: translateY(-1px);
+  text-decoration: none;
+}
+
+/* 仅作为 hook：内置 helper 不会输出计数，换用支持 show_count 的 helper 时可用 */
+.tagcloud-count {
+  font-family: var(--font-mono);
+  font-size: .8em;
+  opacity: .75;
+}
+
+/* ------------------------------------------------------------- 面包屑 */
+.breadcrumb {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-4);
+  color: var(--text-faint);
+  font-family: var(--font-mono);
+  font-size: var(--fs-label);
+  letter-spacing: var(--ls-label);
+  text-transform: uppercase;
+}
+
+.breadcrumb a {
+  color: var(--text-muted);
+}
+
+.breadcrumb a:hover {
+  color: var(--accent-strong);
+  text-decoration: none;
+}
+
+.breadcrumb-sep {
+  color: var(--line);
+}
+
+.breadcrumb-current {
+  color: var(--text);
+}
+
+/* --------------------------------------------------------------- 按钮 */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: .6em 1.2em;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  background: var(--surface-3);
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: var(--fs-label);
+  letter-spacing: var(--ls-label);
+  text-transform: uppercase;
+  line-height: 1.6;
+  cursor: pointer;
+  transition: color var(--speed-fast) var(--ease), background-color var(--speed-fast) var(--ease),
+    border-color var(--speed-fast) var(--ease);
+}
+
+.btn:hover {
+  color: var(--accent-strong);
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  text-decoration: none;
+}
+
+/* 主按钮：墨底纸字（黑白灰里的最高对比） */
+.btn-primary {
+  border-color: var(--text);
+  background: var(--text);
+  color: var(--surface);
+}
+
+.btn-primary:hover {
+  border-color: var(--accent-strong);
+  background: var(--accent-strong);
+  color: var(--surface);
+}
+
+.btn-ghost {
+  border-color: transparent;
+  background: transparent;
+  color: var(--text-muted);
+}
+
+.btn-ghost:hover {
+  border-color: transparent;
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+}
+
+/* ------------------------------------------------------------------ 404 */
+/* 独立整页（不套 .shell）：整屏留白 + 超大 404 + 右上角返回首页。
+   版式对应设计图的 "404 / NOT FOUND / RETURN TO HOME PAGE"。 */
+.error-page {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 100vh;
+  min-height: 100dvh;
+  padding: clamp(24px, 5vw, 72px);
+  background: var(--surface);
+}
+
+/* 右上角那个「返回首页」已按反馈删除：底部 .error-links 里已经有首页入口，
+   同一屏出现两处首页标示是冗余。 */
+
+.error-heading {
+  margin: 0;
+  color: var(--text);
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: clamp(3rem, 13vw, 11rem);
+  line-height: .86;
+  letter-spacing: -.02em;
+  /* 设计图里大字贴着左边缘，略微出血更接近 */
+  margin-inline-start: -.04em;
+}
+
+.error-code,
+.error-title {
+  display: block;
+  overflow-wrap: break-word;
+}
+
+/* 副标题单独一档字号：它可能是「页面走丢了」这种多字中文，
+   跟 404 用同一个 vw 尺寸会横向撑爆。 */
+.error-title {
+  margin-block-start: .04em;
+  font-size: clamp(1.5rem, 4.6vw, 3.4rem);
+}
+
+.error-desc {
+  max-width: 46ch;
+  margin-block-start: clamp(20px, 3vw, 36px);
+  color: var(--text-muted);
+  font-size: clamp(.95rem, 1.4vw, 1.1rem);
+  line-height: 1.7;
+}
+
+.error-links {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-5);
+  margin-block-start: var(--space-6);
+}
+
+.error-link {
+  font-family: var(--font-mono);
+  font-size: var(--fs-label);
+  letter-spacing: var(--ls-label);
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.error-link:not(:last-child)::after {
+  content: "/";
+  margin-inline-start: var(--space-5);
+  color: var(--line);
+}
+
+.error-link:hover {
+  color: var(--accent-strong);
+}
+
+/* 兼容 v1 的类名（万一有旧内容引用） */
+.not-found {
+  padding-block: var(--space-8);
+  text-align: center;
+}
+
+.not-found-code {
+  display: block;
+  margin: 0;
+  color: var(--text);
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: clamp(3.5rem, 16vw, 7rem);
+  line-height: 1.02;
+  letter-spacing: var(--ls-display);
+}
+
+.not-found-text {
+  max-width: 48ch;
+  margin: var(--space-4) auto 0;
+  color: var(--text-muted);
+  line-height: 1.7;
+}
+
+.not-found-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  margin-top: var(--space-6);
+}

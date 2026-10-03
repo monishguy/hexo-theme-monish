@@ -1,0 +1,25 @@
+<%
+/**
+ * 分类归档页 /categories/xxx/（由 hexo-generator-category 触发）。
+ * 分类索引页 /categories/ 是站点 source 里的独立页，会走 layout/page.ejs，
+ * 那里调用同一个 _partial/category-list.ejs，保证两条路径渲染一致。
+ */
+var cfg = monish_config();
+var isIndex = !page.category;
+var heading = isIndex ? monish_t('categories') : page.category;
+%>
+<article class="card" id="content-card">
+  <header class="card-head">
+    <% if (!isIndex){ %>
+      <p class="post-date"><%= monish_t('category') %></p>
+    <% } %>
+    <h1 class="card-title"><%= heading %></h1>
+  </header>
+  <div class="card-body">
+    <% if (isIndex){ %>
+      <%- partial('_partial/category-list') %>
+    <% } else { %>
+      <%- partial('_partial/archive-list') %>
+    <% } %>
+  </div>
+</article>

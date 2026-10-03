@@ -1,0 +1,46 @@
+<%
+/**
+ * 移动端导航抽屉（含遮罩）。设计契约 §3.2b。
+ * 机制与 v1 完全相同：JS 先撤 hidden → rAF 后加 .is-open；关闭时反向。
+ */
+var cfg = monish_config();
+var nav = cfg.nav || {};
+var menu = nav.menu || {};
+var rssPath = (typeof monish_feed_path === 'function') ? monish_feed_path() : (nav.rss || '');
+
+function drawerLabel(name) {
+  var key = String(name).toLowerCase().trim();
+  if (!/^[a-z_]+$/.test(key)) return name;
+  var translated = monish_t(key);
+  return translated === key ? name : translated;
+}
+
+function drawerActive(path) {
+  try {
+    var target = url_for(path);
+    var current = url_for(page.path || '');
+    if (!target || target === '/') return false;
+    return current.indexOf(target.replace(/\/$/, '')) === 0;
+  } catch (error) { return false; }
+}
+%>
+<div class="nav-backdrop" id="nav-backdrop" hidden></div>
+
+<div class="nav-drawer" id="nav-drawer" hidden>
+  <nav class="nav-drawer-inner" aria-label="<%= monish_t('menu') %>">
+    <% if (nav.home !== false){ var drawerHomeActive = is_home(); %>
+      <a class="drawer-link<%= drawerHomeActive ? ' is-active' : '' %>" href="<%- url_for('/') %>"<% if (drawerHomeActive) { %> aria-current="page"<% } %>><%= monish_t('home') %></a>
+    <% } %>
+    <% Object.keys(menu).forEach(function (name){ var path = menu[name]; var drawerActiveItem = drawerActive(path); %>
+      <a class="drawer-link<%= drawerActiveItem ? ' is-active' : '' %>" href="<%- url_for(path) %>"<% if (drawerActiveItem) { %> aria-current="page"<% } %>><%= drawerLabel(name) %></a>
+    <% }); %>
+    <% if (rssPath){ %>
+      <a class="drawer-link" href="<%- url_for(rssPath) %>"><%= monish_t('rss') %></a>
+    <% } %>
+
+    <%# ≤900px 时左栏的主题切换会被隐藏，改从抽屉里切（同一个 .theme-toggle 类，JS 会一起同步） %>
+    <button class="drawer-link theme-toggle" id="theme-toggle-drawer" type="button"
+            data-mode="auto" aria-label="<%= monish_t('mode_switch') %>"
+            data-label-auto="<%= monish_t('theme_auto') %>" data-label-light="<%= monish_t('theme_light') %>" data-label-dark="<%= monish_t('theme_dark') %>"><%= monish_t('theme_auto') %></button>
+  </nav>
+</div>

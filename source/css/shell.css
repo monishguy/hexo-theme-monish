@@ -1,0 +1,486 @@
+/* ==========================================================================
+   monish · 3/11 · shell.css（v2 新增）
+   纸卡外壳：.shell 大圆角白卡 / 左栏 .rail（站点身份 + 导航）/ 主区 .main
+   / 竖向滚动指示 .scroll-track / 跳转链接 / 移动抽屉
+   契约 §3.1–§3.3、§3.2b；画布与令牌见 §2。
+   ========================================================================== */
+
+/* ============================================================ 大圆角白卡 */
+.shell {
+  position: relative;
+  display: grid;
+  /* 左栏宽度与两栏间距都是 §2 令牌 */
+  grid-template-columns: var(--rail-w) minmax(0, 1fr);
+  column-gap: var(--gap-rail);
+  /* 1320px 是卡片最大宽度；下面 .scroll-track 的定位算式复用了同一个字面量，
+     改这里记得同步改那里（CSS 变量清单见 §2，未登记宽度令牌）。 */
+  width: min(1320px, calc(100% - var(--shell-pad) * 2));
+  min-height: var(--shell-min-h);
+  margin: var(--shell-pad) auto;
+  background: var(--surface);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+}
+
+/* =============================================================== 左栏 rail */
+.rail {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: var(--space-6);
+  align-self: start;
+  min-width: 0;
+  /* 一屏高：站点身份在上、导航贴左栏底部；内容更高时自然撑开 */
+  min-height: var(--shell-min-h);
+  padding: clamp(28px, 3vw, 46px) 0 clamp(28px, 3vw, 46px) clamp(28px, 3vw, 46px);
+  /* 桌面在列内吸顶：正文滚动时身份区不动。
+     sticky 同时是「已定位元素」，所以作者信息弹层的 absolute 以它为参照。 */
+  position: sticky;
+  top: var(--shell-pad);
+  z-index: 10;
+}
+
+.rail-top {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  min-width: 0;
+}
+
+/* 超粗大标题（hero.layout: card 时它就是首屏主角） */
+.rail-slogan {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: var(--fs-display);
+  line-height: var(--lh-display);
+  letter-spacing: var(--ls-display);
+  color: var(--text);
+  overflow-wrap: break-word;
+  text-wrap: balance;
+}
+
+/* 独立首屏（hero.layout: full/center/banner）时左栏大标题让位给 hero 色块 */
+[data-display="splash"] .rail-slogan {
+  display: none;
+}
+
+/* 虚线圆圈头像 + 作者名 */
+/* .rail-identity 是身份区（作者块 + 移动端菜单按钮 + 作者弹层）的容器，
+   position: relative 让弹层以这一行为参照（而不是整个 rail 的底部）。 */
+.rail-identity {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.rail-author {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+
+/* 只有可点（有弹层）时才给反馈 */
+button.rail-author:hover .author-name {
+  color: var(--accent-strong);
+}
+
+/* ---------------------------------------------------------- 作者信息弹层 */
+.author-popover {
+  position: absolute;
+  top: calc(100% + var(--space-3));
+  inset-inline-start: 0;
+  z-index: 40;
+  min-width: 220px;
+  max-width: min(320px, 100%);
+  padding: var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
+  opacity: 0;
+  transform: translateY(-6px);
+  transition: opacity var(--speed) var(--ease-out-expo), transform var(--speed) var(--ease-out-expo);
+}
+
+.author-popover[hidden] {
+  display: none;
+}
+
+.author-popover.is-open {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.author-popover-name {
+  margin-block-end: var(--space-2);
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: var(--fs-label);
+  letter-spacing: var(--ls-label);
+  text-transform: uppercase;
+}
+
+.author-popover-desc {
+  margin-block-end: var(--space-3);
+  color: var(--text-muted);
+  font-size: .875rem;
+  line-height: 1.6;
+}
+
+.author-links {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.author-link {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: var(--fs-label);
+  letter-spacing: .04em;
+  transition: color var(--speed-fast) var(--ease), background-color var(--speed-fast) var(--ease);
+}
+
+.author-link:hover {
+  color: var(--accent-strong);
+  background: var(--accent-soft);
+  text-decoration: none;
+}
+
+.author-link .fa {
+  width: 1.2em;
+  color: var(--text-faint);
+  text-align: center;
+}
+
+.author-link:hover .fa {
+  color: var(--accent-strong);
+}
+
+/* 非链接信息（QQ 号之类）：值靠右 */
+.author-link--text {
+  cursor: default;
+}
+
+.author-link--text:hover {
+  color: var(--text-muted);
+  background: none;
+}
+
+.author-link-value {
+  margin-inline-start: auto;
+  color: var(--text);
+}
+
+.author-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 44px;
+  height: 44px;
+  border: 1.5px dashed var(--line);
+  border-radius: 50%;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: var(--fs-label);
+  line-height: 1;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+
+.author-name {
+  /* 不折行：等宽 + 字距下断行会切成 MONIS / HGUY；
+     同时不允许被 flex 压缩（否则 nowrap 的文字会溢出容器） */
+  flex: 0 0 auto;
+  min-width: 0;
+  white-space: nowrap;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: var(--fs-label);
+  letter-spacing: var(--ls-label);
+  text-transform: uppercase;
+}
+
+/* -------------------------------------------------------- 底部导航 / 工具 */
+.rail-bottom {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  min-width: 0;
+}
+
+.rail-nav {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) 0;
+  min-width: 0;
+}
+
+.rail-link {
+  font-family: var(--font-mono);
+  font-size: var(--fs-label);
+  letter-spacing: var(--ls-label);
+  text-transform: uppercase;
+  color: var(--text);
+  transition: color var(--speed-fast) var(--ease);
+}
+
+/* 相邻项之间的「/」分隔由 CSS 负责（模板不要再写分隔符，否则会出现双斜杠） */
+.rail-link:not(:last-child)::after {
+  content: "/";
+  margin-inline: var(--space-3);
+  color: var(--line);
+}
+
+.rail-link:hover {
+  color: var(--accent-strong);
+}
+
+.rail-link.is-active {
+  color: var(--accent-strong);
+  font-weight: 500;
+}
+
+.rail-utils {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-4);
+  min-width: 0;
+}
+
+/* 等宽小字按钮：无边框、次要灰，hover 转强调色 */
+.util-btn {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--text-faint);
+  font-family: var(--font-mono);
+  font-size: var(--fs-label);
+  letter-spacing: var(--ls-label);
+  text-transform: uppercase;
+  line-height: 1.6;
+  cursor: pointer;
+  transition: color var(--speed-fast) var(--ease);
+}
+
+.util-btn:hover {
+  color: var(--accent-strong);
+}
+
+/* 移动抽屉开关：只在 ≤900px 出现（responsive.css） */
+.nav-toggle {
+  display: none;
+}
+
+/* ================================================================ 主区 */
+.main {
+  min-width: 0;
+  /* 两栏之间的竖分隔线（对应设计图中间那根线） */
+  border-inline-start: 1px solid var(--line);
+  padding: clamp(28px, 3vw, 46px) clamp(28px, 3vw, 46px) clamp(28px, 3vw, 46px) var(--space-5);
+}
+
+/* ======================================================= 竖向滚动指示条 */
+/* 固定贴在卡片右侧内缘：卡片宽 = min(1320px, 100% - 2·shell-pad) 且居中，
+   所以「离视口右缘的距离」= 居中留白 + 卡片内缘留白(22px)。 */
+.scroll-track {
+  position: fixed;
+  top: calc(var(--shell-pad) + 30px);
+  bottom: calc(var(--shell-pad) + 30px);
+  inset-inline-end: calc(50% - min(660px, (100% - var(--shell-pad) * 2) / 2) + 22px);
+  z-index: 30;
+  width: 3px;
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--text) 8%, transparent);
+  pointer-events: none;
+}
+
+/* 滑块：位置由 JS 写在自身上的 --progress（百分比）驱动，
+   0% → 顶，100% → 82%（留出滑块自身 18% 的高度）。
+   滚动过程中 JS 加 .is-active：滑块微微加宽 + 加深，松手 400ms 后收回。
+   加宽用 scaleX（合成层）而不是改 width，避免每帧重排。 */
+.scroll-thumb {
+  position: absolute;
+  inset-inline: 0;
+  top: calc(var(--progress, 0%) * 0.82);
+  height: 18%;
+  border-radius: inherit;
+  background: var(--text-faint);
+  transform-origin: center;
+  transition:
+    top 140ms linear,
+    background-color var(--speed-fast) var(--ease),
+    transform var(--speed-fast) var(--ease-out-expo);
+}
+
+.scroll-thumb.is-active {
+  transform: scaleX(1.9);
+  background: var(--text-muted);
+}
+
+.scroll-track.is-hidden,
+.scroll-thumb.is-hidden {
+  display: none;
+}
+
+/* ============================================================= 跳转链接 */
+.skip-link {
+  position: fixed;
+  top: var(--space-3);
+  inset-inline-start: var(--space-3);
+  z-index: 200;
+  padding: var(--space-2) var(--space-5);
+  border-radius: var(--radius-pill);
+  background: var(--text);
+  color: var(--surface);
+  font-family: var(--font-mono);
+  font-size: var(--fs-label);
+  letter-spacing: var(--ls-label);
+  text-transform: uppercase;
+  box-shadow: var(--shadow-pill);
+  /* 默认完全移出视口，仅键盘聚焦时滑入 */
+  transform: translateY(calc(-100% - var(--space-6)));
+  opacity: 0;
+  pointer-events: none;
+  transition: transform var(--speed) var(--ease-out-expo), opacity var(--speed) var(--ease-out-expo);
+}
+
+.skip-link:focus,
+.skip-link:focus-visible {
+  transform: translateY(0);
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* ===================================================== 移动抽屉（§3.2b） */
+/* 层级：遮罩 45 < 折叠后的 rail 顶栏 50 < 抽屉 60 */
+.nav-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 45;
+  background: color-mix(in srgb, var(--text) 38%, transparent);
+  -webkit-backdrop-filter: blur(2px);
+  backdrop-filter: blur(2px);
+  opacity: 0;
+  transition: opacity var(--speed) var(--ease-out-expo);
+}
+
+.nav-backdrop[hidden] {
+  display: none;
+}
+
+.nav-backdrop.is-open {
+  opacity: 1;
+}
+
+.nav-drawer {
+  position: fixed;
+  /* 浮层卡片：贴顶栏下沿、右侧留边；高度随内容，超出可用高度才内部滚动 */
+  inset: calc(var(--nav-height) + var(--space-2)) var(--space-2) auto auto;
+  z-index: 60;
+  width: min(80vw, 300px);
+  max-height: calc(100vh - var(--nav-height) - var(--space-4));
+  max-height: calc(100dvh - var(--nav-height) - var(--space-4));
+  padding: var(--space-3);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  /* 收起态：右移出屏 + 透明，配合 JS 的 hidden 切换做进出场 */
+  transform: translateX(calc(100% + var(--space-4)));
+  opacity: 0;
+  visibility: hidden;
+  transition: transform var(--speed) var(--ease-out-expo), opacity var(--speed) var(--ease-out-expo),
+    visibility var(--speed) var(--ease-out-expo);
+}
+
+/* display:block 会覆盖 UA 的 [hidden]{display:none}，必须显式兜底 */
+.nav-drawer[hidden] {
+  display: none;
+}
+
+.nav-drawer.is-open {
+  transform: translateX(0);
+  opacity: 1;
+  visibility: visible;
+}
+
+.nav-drawer-inner {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.drawer-link {
+  display: block;
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: var(--fs-label);
+  letter-spacing: var(--ls-label);
+  text-transform: uppercase;
+  line-height: 1.6;
+  /* 逐项淡入；收起时不带延迟，避免"赖着不走" */
+  opacity: 0;
+  transform: translateX(10px);
+  transition: opacity var(--speed) var(--ease-out-expo), transform var(--speed) var(--ease-out-expo),
+    background-color var(--speed-fast) var(--ease), color var(--speed-fast) var(--ease);
+  transition-delay: 0s;
+}
+
+/* 抽屉里的 <button class="drawer-link">（主题切换）要和 <a> 长得一样 */
+button.drawer-link {
+  width: 100%;
+  border: 0;
+  background: none;
+  text-align: start;
+  cursor: pointer;
+}
+
+/* 展开时逐项错开（延迟只写在展开态，所以收起时立刻开始淡出） */
+.nav-drawer.is-open .drawer-link {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.nav-drawer.is-open .drawer-link:nth-child(1) { transition-delay: 0ms; }
+.nav-drawer.is-open .drawer-link:nth-child(2) { transition-delay: 45ms; }
+.nav-drawer.is-open .drawer-link:nth-child(3) { transition-delay: 90ms; }
+.nav-drawer.is-open .drawer-link:nth-child(4) { transition-delay: 135ms; }
+.nav-drawer.is-open .drawer-link:nth-child(5) { transition-delay: 180ms; }
+.nav-drawer.is-open .drawer-link:nth-child(6) { transition-delay: 225ms; }
+.nav-drawer.is-open .drawer-link:nth-child(7) { transition-delay: 270ms; }
+.nav-drawer.is-open .drawer-link:nth-child(n+8) { transition-delay: 315ms; }
+
+.drawer-link:hover {
+  color: var(--accent-strong);
+  background: var(--accent-soft);
+  text-decoration: none;
+}
+
+.drawer-link.is-active {
+  color: var(--accent-strong);
+  font-weight: 500;
+  background: var(--accent-soft);
+}

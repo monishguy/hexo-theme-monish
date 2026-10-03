@@ -1,0 +1,49 @@
+<%
+/**
+ * 归档明细列表：按年分组，每组内按时间倒序列出文章标题。
+ * 供 archive.ejs / archive-detail.ejs / category.ejs / tag.ejs 复用。
+ * 设计契约 §3.6。
+ */
+var items = (page.posts && page.posts.length) ? page.posts : (site.posts || []);
+var grouped = {};
+var years = [];
+items.sort('-date').each(function (item){
+  var year = item.date ? item.date.format('YYYY') : '';
+  if (!grouped[year]) { grouped[year] = []; years.push(year); }
+  grouped[year].push(item);
+});
+%>
+<% if (!years.length){ %>
+  <div class="empty-state" data-reveal>
+    <span class="fa fa-leaf empty-state-icon" aria-hidden="true"></span>
+    <p class="empty-state-text"><%= monish_t('no_posts') %></p>
+  </div>
+<% } else { %>
+  <div class="archive-groups" data-reveal>
+    <% years.forEach(function (year){ %>
+      <section class="archive-group">
+        <h2 class="archive-group-year"><%= year %></h2>
+        <ul class="archive-group-list">
+          <% grouped[year].forEach(function (item){ %>
+            <li class="archive-group-item">
+              <time class="archive-group-date" datetime="<%= date_xml(item.date) %>"><%= date(item.date, 'MM-DD') %></time>
+              <a class="archive-group-link" href="<%- url_for(item.path) %>"><%= item.title %></a>
+              <% if (item.categories && item.categories.length){ %>
+                <span class="archive-group-category"><%= item.categories.first().name %></span>
+              <% } %>
+            </li>
+          <% }); %>
+        </ul>
+      </section>
+    <% }); %>
+  </div>
+  <% if (page.total > 1){ %>
+    <nav class="pagination" aria-label="pagination">
+      <%- paginator({
+        prev_text: monish_t('prev_page'),
+        next_text: monish_t('next_page'),
+        escape: false
+      }) %>
+    </nav>
+  <% } %>
+<% } %>

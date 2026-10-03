@@ -1,0 +1,17 @@
+<%
+/**
+ * 归档页 /archives/。设计契约 §3.5。
+ */
+var cfg = monish_config();
+%>
+<article class="card" id="content-card">
+  <header class="card-head">
+    <h1 class="card-title"><%= monish_t('archives') %></h1>
+    <% if (page.description){ %>
+      <p class="card-description"><%= page.description %></p>
+    <% } %>
+  </header>
+  <div class="card-body">
+    <%- partial('_partial/archive-list') %>
+  </div>
+</article>

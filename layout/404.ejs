@@ -1,0 +1,47 @@
+---
+layout: false
+---
+<%
+/**
+ * 404 页（独立整页，不套 .shell）。
+ *
+ * `layout: false` 是必须的：Hexo 生成器渲染时会把 locals.layout 默认设成 'layout'，
+ * 不显式关掉就会被 layout/layout.ejs 再包一层（出现两个 <!DOCTYPE>）。
+ *
+ * 视觉：整屏留白，超大 404 + 本地化文案，右上角一个「返回首页」的等宽小字链接
+ * —— 对应设计图的 404 NOT FOUND 版式。
+ *
+ * 由 scripts/generator.js 生成 /404.html（主题 source/ 里的文件不会被渲染成页面）。
+ */
+var cfg = monish_config();
+var defaultMode = String(cfg.appearance.default_mode || 'auto').toLowerCase();
+if (['auto', 'light', 'dark'].indexOf(defaultMode) < 0) defaultMode = 'auto';
+%>
+<!DOCTYPE html>
+<html lang="<%= config.language || 'zh-CN' %>" data-theme-mode="auto" data-root="<%- url_for('/') %>"
+      data-page="404"
+      data-display="card"
+      data-animation="<%= cfg.appearance.enable_animation ? 'true' : 'false' %>"
+      data-lightbox="false" data-copy-code="false" data-search="false"
+      data-label-copy="<%= monish_t('copy') %>" data-label-copied="<%= monish_t('copied') %>"
+      data-label-search-placeholder="<%= monish_t('search_placeholder') %>"
+      data-label-search-empty="<%= monish_t('search_empty') %>">
+<%- partial('_partial/head') %>
+<body class="monish is-404">
+  <main class="error-page" id="main">
+    <h1 class="error-heading">
+      <span class="error-code">404</span>
+      <span class="error-title"><%= monish_t('not_found') %></span>
+    </h1>
+
+    <p class="error-desc"><%= monish_t('not_found_desc') %></p>
+
+    <nav class="error-links" aria-label="<%= monish_t('menu') %>">
+      <a class="error-link" href="<%- url_for('/') %>"><%= monish_t('home') %></a>
+      <a class="error-link" href="<%- url_for('/archives/') %>"><%= monish_t('archives') %></a>
+    </nav>
+  </main>
+
+  <script src="<%- url_for('/js/monish.js') %>"></script>
+</body>
+</html>

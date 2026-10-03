@@ -1,0 +1,22 @@
+<%
+/**
+ * 图片灯箱。仅 features.lightbox 开启时输出。
+ * 设计契约 §3.12。
+ */
+var cfg = monish_config();
+%>
+<% if (cfg.features.lightbox){ %>
+<div class="lightbox" id="lightbox" role="dialog" aria-modal="true" aria-label="<%= monish_t('expand') %>" hidden>
+  <button class="lightbox-close" id="lightbox-close" type="button" aria-label="<%= monish_t('close') %>">
+    <span class="fa fa-times" aria-hidden="true"></span>
+  </button>
+  <button class="lightbox-prev" id="lightbox-prev" type="button" aria-label="<%= monish_t('prev_post') %>">
+    <span class="fa fa-angle-left" aria-hidden="true"></span>
+  </button>
+  <img class="lightbox-image" id="lightbox-image" src="" alt="">
+  <button class="lightbox-next" id="lightbox-next" type="button" aria-label="<%= monish_t('next_post') %>">
+    <span class="fa fa-angle-right" aria-hidden="true"></span>
+  </button>
+  <p class="lightbox-caption" id="lightbox-caption"></p>
+</div>
+<% } %>

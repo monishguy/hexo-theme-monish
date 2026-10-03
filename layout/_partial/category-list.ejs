@@ -1,0 +1,37 @@
+<%
+/**
+ * 分类索引：每个分类一张卡片，列出最近 6 篇文章。
+ * 被 layout/category.ejs（分类归档页）与 layout/page.ejs（/categories/ 独立页）共用。
+ * 设计契约 §3.9。
+ */
+var groups = site.categories ? site.categories.sort('name').toArray() : [];
+%>
+<% if (groups.length){ %>
+  <div class="category-groups" data-reveal>
+    <% groups.forEach(function (group){ %>
+      <section class="term-card">
+        <h2 class="term-card-title">
+          <a href="<%- url_for(group.path) %>"><%= group.name %></a>
+          <span class="term-card-count"><%= group.length %></span>
+        </h2>
+        <% var posts = group.posts.sort('-date').limit(6); %>
+        <ul class="term-card-list">
+          <% posts.each(function (item){ %>
+            <li class="term-card-item">
+              <a class="term-card-link" href="<%- url_for(item.path) %>"><%= item.title %></a>
+              <time class="term-card-date" datetime="<%= date_xml(item.date) %>"><%= date(item.date, 'YYYY-MM-DD') %></time>
+            </li>
+          <% }); %>
+        </ul>
+        <% if (group.length > 6){ %>
+          <a class="term-card-more" href="<%- url_for(group.path) %>"><%= monish_t('more') %> <span class="fa fa-long-arrow-right" aria-hidden="true"></span></a>
+        <% } %>
+      </section>
+    <% }); %>
+  </div>
+<% } else { %>
+  <div class="empty-state" data-reveal>
+    <span class="fa fa-leaf empty-state-icon" aria-hidden="true"></span>
+    <p class="empty-state-text"><%= monish_t('no_posts') %></p>
+  </div>
+<% } %>

@@ -1,0 +1,6 @@
+# 仅用于「不干扰站点当前主题」的 monish 预览构建：
+#   npx hexo generate --config _config.yml,themes/monish/_preview.yml
+# 它会用 monish 主题渲染，但输出到 public-monish/，
+# 不覆盖站点 _config.yml 里的 theme（当前是 stellar），也不动 public/。
+theme: monish
+public_dir: public-monish

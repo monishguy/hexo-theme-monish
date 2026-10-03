@@ -1,0 +1,91 @@
+/* ==========================================================================
+   monish · 8/11 · footer.css
+   页脚（在 .shell 外面，居中等宽小字，无背景无边框）+ 返回顶部
+   契约 §3.6。
+   ========================================================================== */
+
+.site-footer {
+  /* 与大卡片同宽、左右对齐 */
+  width: min(1320px, calc(100% - var(--shell-pad) * 2));
+  margin: 0 auto var(--shell-pad);
+  padding-block: var(--space-2) var(--space-5);
+  background: none;
+  border: 0;
+  color: var(--text-faint);
+  font-family: var(--font-mono);
+  font-size: var(--fs-label);
+  letter-spacing: var(--ls-label);
+  text-transform: uppercase;
+}
+
+.footer-inner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2) var(--space-5);
+  text-align: center;
+}
+
+.footer-copyright,
+.footer-powered,
+.footer-theme-name,
+.footer-icp {
+  color: var(--text-faint);
+}
+
+.footer-inner a {
+  color: var(--text-muted);
+  transition: color var(--speed-fast) var(--ease);
+}
+
+.footer-inner a:hover {
+  color: var(--accent-strong);
+  text-decoration: none;
+}
+
+/* -------------------------------------------------------------- 返回顶部 */
+.back-to-top {
+  position: fixed;
+  inset-inline-end: var(--space-5);
+  bottom: var(--space-5);
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: var(--shadow-pill);
+  font-size: .875rem;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(8px);
+  transition: opacity var(--speed) var(--ease-out-expo), transform var(--speed) var(--ease-out-expo),
+    visibility var(--speed) var(--ease-out-expo), color var(--speed-fast) var(--ease),
+    background-color var(--speed-fast) var(--ease);
+}
+
+.back-to-top:hover {
+  color: var(--accent-strong);
+  background: var(--accent-soft);
+  text-decoration: none;
+}
+
+/* base.css 的 .is-hidden 是 display:none；返回顶部需要淡入淡出，故此处单独覆盖 */
+.back-to-top.is-hidden {
+  display: flex;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(8px);
+  pointer-events: none;
+}
+
+.back-to-top:not(.is-hidden) {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}

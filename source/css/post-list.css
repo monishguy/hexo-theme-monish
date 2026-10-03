@@ -1,0 +1,222 @@
+/* ==========================================================================
+   monish · 5/11 · post-list.css
+   首页文章列表：.post-list（纵向）/ .post-row（日期 + 药丸卡）
+   / .tag-chip / .meta-item / .pagination / .empty-state
+   契约 §3.4；配色与等宽小标签写法见 §2。
+   ========================================================================== */
+
+/* ------------------------------------------------------------------ 列表 */
+.post-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* 行：左边等宽日期列，右边白色药丸卡 */
+.post-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: var(--space-4) var(--space-5);
+  min-width: 0;
+}
+
+/* 日期：月份 / 日 竖排两行，等宽数字不跳动 */
+.post-row-date {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+  padding-block-start: 3px;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.date-month {
+  color: var(--text-faint);
+  font-size: var(--fs-label);
+  letter-spacing: var(--ls-label);
+  text-transform: uppercase;
+}
+
+.date-day {
+  color: var(--text);
+  font-size: 1.0625rem;
+  font-weight: 500;
+}
+
+/* --------------------------------------------------------------- 药丸卡 */
+.post-pill {
+  display: block;
+  min-width: 0;
+  padding: clamp(18px, 2vw, 26px) clamp(20px, 2.4vw, 30px);
+  background: var(--surface-2);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-pill);
+  transition: transform var(--speed-fast) var(--ease), box-shadow var(--speed-fast) var(--ease);
+}
+
+.post-pill:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-hover);
+  text-decoration: none;
+}
+
+/* 药丸内标题是粗黑正文体（不是 display 字体） */
+.post-pill-title {
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 1.35rem;
+  line-height: 1.35;
+  color: var(--text);
+  transition: color var(--speed-fast) var(--ease);
+}
+
+.post-pill:hover .post-pill-title {
+  color: var(--accent-strong);
+}
+
+.post-pill-excerpt {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  margin-top: var(--space-2);
+  overflow: hidden;
+  color: var(--text-muted);
+  font-size: .95rem;
+  line-height: 1.6;
+}
+
+/* ----------------------------------------------------------------- 标签片 */
+/* 模板输出形如 `#标签`；绿色只在 hover / 激活出现 */
+.tag-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: .28em .8em;
+  border-radius: var(--radius-pill);
+  background: var(--surface-3);
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: var(--fs-label);
+  letter-spacing: var(--ls-label);
+  /* 不转大写：标签是用户自己写的内容（VibeCoding / RikkaHub / LLM），
+     转大写会丢掉驼峰。导航与日期那些版式标签才用 uppercase。 */
+  line-height: 1.6;
+  transition: color var(--speed-fast) var(--ease), background-color var(--speed-fast) var(--ease);
+}
+
+.tag-chip:hover {
+  color: var(--accent-strong);
+  background: var(--accent-soft);
+  text-decoration: none;
+}
+
+/* ----------------------------------------------------------------- 元信息 */
+/* 等宽小标签；.card-meta 里是 <dl> 结构（dt/dd），见 page.css */
+.meta-item {
+  display: inline-flex;
+  align-items: baseline;
+  gap: .5em;
+  min-width: 0;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: var(--fs-label);
+  letter-spacing: var(--ls-label);
+}
+
+.meta-item a {
+  color: inherit;
+}
+
+.meta-item a:hover {
+  color: var(--accent-strong);
+  text-decoration: none;
+}
+
+/* ------------------------------------------------------------------- 分页 */
+.pagination {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  margin: var(--space-6) 0 0;
+  padding: 0;
+  list-style: none;
+  font-family: var(--font-mono);
+  font-size: var(--fs-label);
+  letter-spacing: var(--ls-label);
+  text-transform: uppercase;
+}
+
+.page-number,
+.pagination .extend {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  /* 不允许被压缩：不够宽时交给 flex-wrap 换行 */
+  flex: 0 0 auto;
+  min-width: 34px;
+  height: 34px;
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-pill);
+  background: var(--surface-3);
+  color: var(--text-muted);
+  transition: color var(--speed-fast) var(--ease), background-color var(--speed-fast) var(--ease);
+}
+
+.page-number:hover,
+.pagination .extend:hover {
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+  text-decoration: none;
+}
+
+.pagination .extend.prev,
+.pagination .extend.next {
+  padding-inline: var(--space-4);
+}
+
+.page-number.current {
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+  font-weight: 500;
+}
+
+.pagination .extend.is-hidden {
+  display: none;
+}
+
+/* ------------------------------------------------------------------- 空态 */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-8) var(--space-5);
+  border: 1px dashed var(--line);
+  border-radius: var(--radius-lg);
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.empty-state-icon {
+  color: var(--text-faint);
+  font-size: 2rem;
+  line-height: 1;
+}
+
+.empty-state-text {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: var(--fs-label);
+  letter-spacing: var(--ls-label);
+  text-transform: uppercase;
+}

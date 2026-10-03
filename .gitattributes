@@ -1,0 +1,21 @@
+# 统一换行：仓库里一律存 LF，检出到工作区也是 LF。
+# Hexo 主题里有大量 CSS/JS/EJS，CRLF 会让 diff 出现整文件改动。
+* text=auto eol=lf
+
+# 二进制资源不要被当文本处理
+*.woff2 binary
+*.woff  binary
+*.ttf   binary
+*.otf   binary
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.gif   binary
+*.webp  binary
+*.ico   binary
+*.zip   binary
+*.tgz   binary
+
+# GitHub 语言统计：主题是 CSS + EJS，别把 Markdown 算成主语言
+*.md   linguist-documentation
+DESIGN-CONTRACT.md linguist-documentation

@@ -1,0 +1,22 @@
+<%
+/**
+ * 首页列表项：等宽日期（月份 / 日 竖排两行）+ 药丸卡。设计契约 §3.4。
+ * locals: { post }
+ */
+var postItem = post;
+var cfg = monish_config();
+var excerpt = monish_excerpt(postItem, cfg.posts.excerpt_length);
+%>
+<article class="post-row" data-reveal>
+  <time class="post-row-date" datetime="<%= date_xml(postItem.date) %>">
+    <span class="date-month"><%= monish_month(postItem.date) %></span>
+    <span class="date-day"><%= monish_day(postItem.date) %></span>
+  </time>
+
+  <a class="post-pill" href="<%- url_for(postItem.path) %>">
+    <h2 class="post-pill-title"><%= postItem.title %></h2>
+    <% if (excerpt.text){ %>
+      <p class="post-pill-excerpt"><%= excerpt.text %></p>
+    <% } %>
+  </a>
+</article>

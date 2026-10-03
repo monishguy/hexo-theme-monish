@@ -1,0 +1,70 @@
+<%
+/**
+ * 全站外壳（v2「纸卡」）。设计契约 §3.1。
+ *
+ * 结构：body = 浅灰画布
+ *   .shell（大圆角白卡）= [ .rail 左栏 | .main 主区 | .scroll-track 竖向滚动指示 ]
+ *   页脚在 shell 外面
+ */
+var cfg = monish_config();
+
+var isHomeFirst = typeof is_home_first_page === 'function' ? is_home_first_page() : is_home();
+var pageType = 'page';
+if (is_post()) pageType = 'post';
+else if (is_archive()) pageType = 'archive';
+else if (is_category()) pageType = 'category';
+else if (is_tag()) pageType = 'tag';
+else if (is_home()) pageType = 'home';
+
+/* hero 两种模式：card = 左栏大标题（默认）；full/center/banner = 独立首屏色块 */
+var heroLayout = String(cfg.hero.layout || 'card').toLowerCase();
+var isSplash = pageType === 'home' && isHomeFirst && cfg.hero.enable !== false && heroLayout !== 'card';
+var displayMode = isSplash ? 'splash' : 'card';
+
+var bodyClass = ['monish', isHomeFirst ? 'is-home' : 'is-page'];
+%>
+<!DOCTYPE html>
+<html lang="<%= config.language || 'zh-CN' %>" data-theme-mode="auto" data-root="<%- url_for('/') %>"
+      data-page="<%= pageType %>"
+      data-display="<%= displayMode %>"
+      data-animation="<%= cfg.appearance.enable_animation ? 'true' : 'false' %>"
+      data-lightbox="<%= cfg.features.lightbox ? 'true' : 'false' %>"
+      data-copy-code="<%= cfg.features.copy_code ? 'true' : 'false' %>"
+      data-search="<%= cfg.features.search ? 'true' : 'false' %>"
+      data-label-copy="<%= monish_t('copy') %>"
+      data-label-copied="<%= monish_t('copied') %>"
+      data-label-search-placeholder="<%= monish_t('search_placeholder') %>"
+      data-label-search-empty="<%= monish_t('search_empty') %>">
+<%- partial('_partial/head') %>
+<body class="<%= bodyClass.join(' ') %>">
+  <a class="skip-link" href="#main"><%= monish_t('skip_to_content') %></a>
+
+  <div class="shell" id="shell">
+    <%- partial('_partial/rail') %>
+
+    <div class="main" id="main">
+      <%- body %>
+    </div>
+
+    <div class="scroll-track<%= cfg.features.progress_bar ? '' : ' is-hidden' %>" id="scroll-track" aria-hidden="true">
+      <span class="scroll-thumb" id="progress-bar"></span>
+    </div>
+  </div>
+
+  <%- partial('_partial/footer') %>
+  <%- partial('_partial/search') %>
+  <%- partial('_partial/lightbox') %>
+
+  <button class="back-to-top<%= cfg.features.back_to_top ? '' : ' is-hidden' %>" id="back-to-top" type="button"
+          aria-label="<%= monish_t('back_to_top') %>" title="<%= monish_t('back_to_top') %>">
+    <span class="fa fa-angle-up" aria-hidden="true"></span>
+  </button>
+
+  <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+  <%- partial('_partial/mobile-drawer') %>
+
+  <script src="<%- url_for('/js/monish.js') %>"></script>
+  <%- partial('_partial/after-footer') %>
+</body>
+</html>

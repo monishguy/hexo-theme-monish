@@ -1,0 +1,223 @@
+# ===========================================================================
+# monish —— Hexo 主题配置
+# 以官方 landscape 主题为骨架重写：衬线字体 / 莫奈睡莲浅绿强调色 / 浅色·深色·自动
+#
+# 说明：
+#   · 所有留空项都会自动回退到站点 _config.yml 中的同名配置
+#   · 修改本文件不需要重启 hexo server
+#   · 详细接口约定见 themes/monish/DESIGN-CONTRACT.md
+# ===========================================================================
+
+# ---------------------------------------------------------------------------
+# 站点信息（留空则读取 Hexo 站点 _config.yml）
+# ---------------------------------------------------------------------------
+site:
+  title: # 例如: 捣蒜小站     —— 留空取 config.title
+  subtitle: # 例如: 记录与思考  —— 留空取 config.subtitle / config.description
+  description: # 留空取 config.description
+  keywords: # 留空取 config.keywords
+  author: # 留空取 config.author
+
+# ---------------------------------------------------------------------------
+# 首页首屏 hero
+# ---------------------------------------------------------------------------
+hero:
+  enable: true
+  # 布局：
+  #   card   = 不渲染独立首屏，左栏那块超粗大标题就是首屏主角（v2 默认，纸卡风格）
+  #   full   = 全屏铺满强调色背景的独立首屏，下滑进入列表
+  #   center = 居中内容区（带内边距，非全屏）
+  #   banner = 顶部横幅（较矮，可配背景图）
+  layout: card
+  # 背景：accent = 强调色渐变；image = 使用 background_image
+  background: accent
+  background_image: # 例如: /images/hero.jpg
+  overlay: 0.18 # 背景图遮罩强度 0~1（仅 background: image 时生效）
+  slogan: # 首屏主标题，留空回退 site.title / config.title
+  # 首屏副标题：留空则回退 site.subtitle / config.subtitle；
+  # 全部留空时首屏只显示主标题（不占位）。下面是给「捣蒜小站」的示例文案，可随意删改。
+  subtitle: 在互联网留下足迹
+  scroll_hint: true # 是否显示“向下浏览”提示
+  scroll_hint_text: # 留空使用语言包 scroll_down
+  height: 100svh # 首屏高度；桌面等价 100vh，移动端 svh 可避开地址栏抖动
+  particles: false # 睡莲光斑装饰（纯 CSS + JS 轻量实现）
+
+# ---------------------------------------------------------------------------
+# 顶部导航
+# ---------------------------------------------------------------------------
+nav:
+  enable: true
+  sticky: true # 滚动时吸顶
+  home: true # 菜单最前是否插入“首页”
+  menu:
+    archives: /archives/
+    categories: /categories/
+    tags: /tags/
+    about: /about/
+  rss: /atom.xml # 留空则不显示 RSS 图标
+
+# ---------------------------------------------------------------------------
+# 首页最新博文
+# ---------------------------------------------------------------------------
+posts:
+  section_title: # 留空使用语言包 latest_posts
+  excerpt_length: 120 # 摘要字数；0 = 只使用 <!-- more --> 之前的内容
+  show_cover: true # 摘要卡片是否显示封面
+  show_categories: true
+  show_tags: false
+  show_readmore: true
+  readmore_text: # 留空使用语言包 read_more
+  date_format: YYYY-MM-DD # 卡片/文章日期格式（Moment.js 语法）
+  card_min_width: 300px # 卡片最小宽度（响应式栅格）
+  columns: 3 # 大屏列数 1~4
+
+# ---------------------------------------------------------------------------
+# 作者 —— 左栏那块「虚线圆圈头像 + 名字」
+# ---------------------------------------------------------------------------
+# 点击名字会弹出一个信息浮层，里面按 links 的顺序列出站点作者想公开的
+# 社交信息（GitHub / B站 / QQ ... 一个或多个都行）。
+author_card:
+  enable: true
+  # 头像：填**图片路径**就显示图片；留空则显示一个虚线圆环 + 名字首字母。
+  # 图片建议放在站点 source/images/ 下，再写站点绝对路径：
+  #   avatar: /images/avatar.png
+  avatar:
+  # 显示的名字，留空回退 site.author / config.author
+  name:
+  # 浮层里名字下方的一句话简介，留空不显示
+  description:
+
+  # 浮层里的条目：`图标名: 值`，**至少填一项才会出现可点击的名字**（否则名字只是文字）。
+  #   值是网址（http(s):// 开头）→ 渲染成新窗口打开的链接
+  #   值是普通文本（例如 QQ 号）→ 渲染成「图标 + 名称 + 值」的只读行
+  # 可用图标名见 DESIGN-CONTRACT.md §4，常用的有：
+  #   github  gitlab  gitee  bilibili  zhihu  weibo  qq  wechat  douban
+  #   telegram  twitter  youtube  instagram  linkedin  steam  mastodon
+  #   mail  rss  link  code  book  music  camera  gamepad  palette
+  links:
+    # github: https://github.com/your-name
+    # bilibili: https://space.bilibili.com/000000
+    # zhihu: https://www.zhihu.com/people/your-name
+    # qq: 10001              # 纯文本，会显示成「qq  10001」
+    # mail: mailto:you@example.com
+
+# ---------------------------------------------------------------------------
+# 页脚
+# ---------------------------------------------------------------------------
+footer:
+  since: # 留空自动取最早一篇文章的年份
+  copyright: # 自定义版权文案，支持 HTML；留空使用 © 年份 作者
+  powered: true # 是否显示“由 Hexo 驱动”
+  icp: # 备案号，留空不显示
+  icp_link: https://beian.miit.gov.cn/
+  links: # 名称: 链接
+    archives: /archives/
+    tags: /tags/
+
+# ---------------------------------------------------------------------------
+# 侧栏（归档 / 分类 / 标签等列表页）
+# ---------------------------------------------------------------------------
+# 侧栏（v2 纸卡风格不再使用左/右侧栏：桌面固定为「左栏站点身份 + 右栏内容卡」）
+# 这些键保留仅为兼容旧配置，当前版本不会渲染 .sidebar-col / .widget
+sidebar:
+  enable: false
+  position: right # left | right
+  widgets: # category | tag | tagcloud | archive | recent_posts | author
+    - author
+    - category
+    - tag
+    - recent_posts
+  recent_posts_limits: 5
+
+# ---------------------------------------------------------------------------
+# 文章页
+# ---------------------------------------------------------------------------
+post:
+  toc: true # 目录
+  toc_depth: 3 # 目录最大层级
+  excerpt_link: # 阅读更多链接文案，留空不显示
+  copyright: true # 版权声明
+  updated: true # 显示更新日期
+  word_count: true # 显示字数
+  reading_time: true # 显示阅读时长
+  reward: # 打赏二维码图片路径，留空不显示
+  prev_next: true # 上一篇 / 下一篇
+  related: false # 相关文章
+  related_limits: 3
+  excerpt_link_icon: true
+  comments:
+    enable: false
+    system: valine # valine | disqus | giscus
+    valine:
+      enable: false
+      appId:
+      appKey:
+      placeholder:
+      lang: zh-cn
+    disqus_shortname:
+    giscus:
+      repo:
+      repo_id:
+      category:
+      category_id:
+      mapping: pathname
+      lang: zh-CN
+
+# ---------------------------------------------------------------------------
+# 归档页
+# ---------------------------------------------------------------------------
+archive:
+  type: monthly # monthly | yearly
+  show_count: true
+
+# ---------------------------------------------------------------------------
+# 外观
+# ---------------------------------------------------------------------------
+appearance:
+  # 首次访问的默认模式：auto 跟随系统 / light / dark
+  # 用户手动切换后会写入 localStorage，不再受此配置影响
+  default_mode: auto
+  accent: "#7FA88B" # 强调色：黑白灰版式里的点缀（链接 / hover / 激活 / 焦点环）
+  accent_dark: "#8FBF9F" # 深色模式强调色
+  radius: 44px # 面板圆角（写进 --radius-card）
+
+  # ---------- 字体三角色：留空用主题内置默认值 ----------
+  # 超粗标题（左栏大标题、文章标题）。Archivo Black 无中文字形，
+  # 中文会自动回退到字体栈里的系统黑体（苹方 / 雅黑）。
+  display_font:
+  # 正文。Inter 无中文字形，中文回退到系统黑体/宋体。
+  body_font:
+  # 等宽小字（导航 / 日期 / 标签 / 元信息）与代码块。JetBrains Mono 之后
+  # 接的是各平台 IDE 自带等宽栈（Cascadia Code → Consolas → SF Mono …）。
+  mono_font:
+
+  # ---------- webfont 交付方式 ----------
+  # local：用主题自带的 7 个 woff2（默认；latin 子集约 155KB，零外链、离线可用）
+  # none ：不引入 fonts.css，直接用系统字体
+  # cdn  ：改用 Google Fonts（国内不稳，仅备选）
+  webfont: local
+
+  enable_transition: true # 主题切换淡入过渡
+  enable_animation: true # 入场 / 滚动动画（始终尊重 prefers-reduced-motion）
+
+# ---------------------------------------------------------------------------
+# 功能开关
+# ---------------------------------------------------------------------------
+features:
+  search: true # 客户端本地搜索（构建时生成 /search.json）
+  lightbox: true # 点击图片放大
+  copy_code: true # 代码块复制按钮
+  back_to_top: true
+  progress_bar: true # 顶部阅读进度条
+  pjax: false # 预留，当前版本未启用
+
+# ---------------------------------------------------------------------------
+# 第三方
+# ---------------------------------------------------------------------------
+analytics:
+  google_analytics: # 例如: UA-XXXXXX-X / G-XXXXXXX
+  gauges: # 例如: XXXXXX（Gauges site id）
+
+# 站点图标：留空则不输出 <link rel="shortcut icon">（避免指向不存在的文件）
+# 想启用就把图标放到站点 source/ 下，例如 /favicon.png
+favicon: /webpics/webpic.png

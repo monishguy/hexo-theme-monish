@@ -1,0 +1,135 @@
+<%
+/**
+ * 左栏：站点身份 + 导航 + 工具按钮。设计契约 §3.2。
+ *
+ * hero.layout: card（默认）时，.rail-slogan 就是首页首屏的主角（超粗大标题）；
+ * hero.layout: full/center/banner 时首页会另渲一个全屏色块首屏，此时由 CSS
+ * 依据 html[data-display="splash"] 把它藏起来。
+ *
+ * 作者块是一个按钮：点击弹出 .author-popover，列出站点作者配置的社交信息
+ * （GitHub / B站 / QQ ... 一个或多个，见 author_card.links）。
+ */
+var cfg = monish_config();
+var nav = cfg.nav || {};
+var menu = nav.menu || {};
+var card = cfg.author_card || {};
+
+var isHomeFirst = typeof is_home_first_page === 'function' ? is_home_first_page() : is_home();
+var rssPath = (typeof monish_feed_path === 'function') ? monish_feed_path() : (nav.rss || '');
+
+/* 大标题：hero.slogan > site.title */
+var slogan = (cfg.hero && cfg.hero.slogan) || cfg.site.title;
+var authorName = card.name || cfg.site.author || cfg.site.title;
+var avatar = card.avatar || '';
+var authorLinks = card.links || {};
+var linkKeys = Object.keys(authorLinks).filter(function (key){ return authorLinks[key]; });
+var hasPopover = linkKeys.length > 0 || !!card.description;
+
+/** 菜单名若命中 i18n 键则翻译（archives → 归档），否则原样显示自定义名称。 */
+function railLabel(name) {
+  var key = String(name).toLowerCase().trim();
+  if (!/^[a-z_]+$/.test(key)) return name;
+  var translated = monish_t(key);
+  return translated === key ? name : translated;
+}
+
+function railActive(path) {
+  try {
+    var target = url_for(path);
+    var current = url_for(page.path || '');
+    if (!target || target === '/') return false;
+    return current.indexOf(target.replace(/\/$/, '')) === 0;
+  } catch (error) { return false; }
+}
+
+/** 值是链接就输出 <a>，否则当纯文本（例如 QQ 号、邮箱名） */
+function isLink(value) {
+  return /^(https?:)?\/\//.test(value) || String(value).indexOf('mailto:') === 0;
+}
+%>
+<aside class="rail" id="rail">
+  <div class="rail-top">
+    <p class="rail-slogan" id="rail-slogan"><%= slogan %></p>
+
+    <div class="rail-identity">
+      <% if (card.enable !== false){ %>
+        <% if (hasPopover){ %>
+          <button class="rail-author" id="author-toggle" type="button"
+                  aria-expanded="false" aria-controls="author-popover">
+        <% } else { %>
+          <div class="rail-author">
+        <% } %>
+          <% if (avatar){ %>
+            <img class="author-avatar author-avatar--img" src="<%- url_for(avatar) %>" alt="<%= authorName %>" loading="lazy" decoding="async">
+          <% } else { %>
+            <span class="author-avatar" aria-hidden="true"><%= (authorName || 'M').trim().charAt(0) %></span>
+          <% } %>
+          <span class="author-name"><%= authorName %></span>
+        <% if (hasPopover){ %>
+          </button>
+        <% } else { %>
+          </div>
+        <% } %>
+      <% } %>
+
+      <%# 移动端（≤900px）右上角的菜单入口；桌面隐藏 %>
+      <button class="util-btn nav-toggle" id="nav-toggle" type="button"
+              aria-label="<%= monish_t('menu') %>" aria-expanded="false" aria-controls="nav-drawer"><%= monish_t('menu') %></button>
+
+      <%# 作者信息弹层：放在 .rail-identity 内，absolute 就以这一行为参照（落在作者块正下方） %>
+      <% if (hasPopover){ %>
+        <div class="author-popover" id="author-popover" hidden>
+          <p class="author-popover-name"><%= authorName %></p>
+          <% if (card.description){ %>
+            <p class="author-popover-desc"><%= card.description %></p>
+          <% } %>
+          <% if (linkKeys.length){ %>
+            <ul class="author-links">
+              <% linkKeys.forEach(function (key){ var value = authorLinks[key]; %>
+                <li class="author-link-item">
+                  <% if (isLink(value)){ %>
+                    <a class="author-link" href="<%- /^(https?:)?\/\//.test(value) ? value : url_for(value) %>"<% if (/^(https?:)?\/\//.test(value)) { %> target="_blank" rel="noopener"<% } %>>
+                      <span class="fa <%= monish_icon(key) %>" aria-hidden="true"></span>
+                      <span class="author-link-label"><%= key %></span>
+                    </a>
+                  <% } else { %>
+                    <span class="author-link author-link--text">
+                      <span class="fa <%= monish_icon(key) %>" aria-hidden="true"></span>
+                      <span class="author-link-label"><%= key %></span>
+                      <span class="author-link-value"><%= value %></span>
+                    </span>
+                  <% } %>
+                </li>
+              <% }); %>
+            </ul>
+          <% } %>
+        </div>
+      <% } %>
+    </div>
+  </div>
+
+  <div class="rail-bottom">
+    <nav class="rail-nav" id="rail-nav" aria-label="<%= monish_t('menu') %>">
+      <% if (nav.home !== false){ var homeActive = is_home(); %>
+        <a class="rail-link<%= homeActive ? ' is-active' : '' %>" href="<%- url_for('/') %>"<% if (homeActive) { %> aria-current="page"<% } %>><%= monish_t('home') %></a>
+      <% } %>
+      <% Object.keys(menu).forEach(function (name){ var path = menu[name]; var active = railActive(path); %>
+        <a class="rail-link<%= active ? ' is-active' : '' %>" href="<%- url_for(path) %>"<% if (active) { %> aria-current="page"<% } %>><%= railLabel(name) %></a>
+      <% }); %>
+    </nav>
+
+    <div class="rail-utils">
+      <% if (cfg.features.search){ %>
+        <button class="util-btn search-toggle" id="search-toggle" type="button"
+                aria-label="<%= monish_t('search') %>" aria-controls="search-box"><%= monish_t('search') %></button>
+      <% } %>
+      <%# 主题切换在桌面留在这里；≤900px 由 CSS 隐藏，改从抽屉里切 %>
+      <button class="util-btn theme-toggle" id="theme-toggle" type="button"
+              data-mode="auto" aria-label="<%= monish_t('mode_switch') %>" title="<%= monish_t('mode_switch') %>"
+              data-label-auto="<%= monish_t('theme_auto') %>" data-label-light="<%= monish_t('theme_light') %>" data-label-dark="<%= monish_t('theme_dark') %>"><%= monish_t('theme_auto') %></button>
+      <% if (rssPath){ %>
+        <a class="util-btn" href="<%- url_for(rssPath) %>"><%= monish_t('rss') %></a>
+      <% } %>
+    </div>
+  </div>
+</aside>

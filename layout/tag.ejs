@@ -1,0 +1,23 @@
+<%
+/**
+ * 标签归档页 /tags/xxx/（由 hexo-generator-tag 触发）。
+ * 标签索引页 /tags/ 通常是站点 source 里的独立页，会走 layout/page.ejs，
+ * 那里同样调用 _partial/tag-list.ejs，保证两条路径渲染一致。
+ */
+var cfg = monish_config();
+var hasPosts = !!(page.tag && page.posts && page.posts.length);
+var heading = hasPosts ? page.tag : monish_t('tags');
+%>
+<article class="card" id="content-card">
+  <header class="card-head">
+    <p class="post-date"><%= monish_t('tag') %></p>
+    <h1 class="card-title">#<%= heading %></h1>
+  </header>
+  <div class="card-body">
+    <% if (hasPosts){ %>
+      <%- partial('_partial/archive-list') %>
+    <% } else { %>
+      <%- partial('_partial/tag-list') %>
+    <% } %>
+  </div>
+</article>
