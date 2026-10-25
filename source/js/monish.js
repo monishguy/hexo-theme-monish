@@ -763,11 +763,17 @@
   // 评论区（giscus / utterances 等）
   // -------------------------------------------------------------------------
   /**
-   * 两件事：
-   * 1. 骨架 → 内容的过渡：iframe 真正 load 之后再摘掉骨架，慢网络下不会
-   *    出现「一块突然撑开的空白把页面顶得跳一下」。
-   * 2. 让评论区跟着站点的深浅色切换（而不是跟系统）：giscus / utterances
-   *    都是通过 iframe 的 postMessage 换主题的。
+   * 两件事，**必须解耦**（v2.1.2 之前耦合在一起，导致「页面一加载就是深色」
+   * 时评论区停在白色）：
+   * 1. 骨架 → 内容的过渡：iframe 真正 load 之后再摘掉骨架。
+   * 2. 让评论区跟着站点的深浅色（而不是跟系统）。
+   *
+   * 为什么不能只在 iframe 的 load 里发一次 postMessage：
+   * giscus 是「iframe load 之后」才在自己的文档里挂上 message 监听器的，
+   * 此刻我们从父页面发出的 setConfig 会被直接丢掉 —— 表现就是
+   * 页面浅色时手动切深色能变色（此时监听已就绪），而一上来就是深色则永远白。
+   * 所以：load 之后按 120/400/1000/2200ms 补发几次，并在评论区进入视口、
+   * 页面从 bfcache 恢复时再补发。setConfig 幂等，重复发没有副作用。
    */
   function initComments() {
     var section = $('#comments');
@@ -777,6 +783,7 @@
     if (!body || !mount) return;
 
     var system = section.getAttribute('data-system') || '';
+    var followOS = section.getAttribute('data-follow-os') === 'true';
 
     /* 各家的 postMessage 协议不一样：giscus 收 {giscus:{setConfig:{theme}}}，
        utterances 收 {type:'set-theme'}，域名也必须是精确的白名单。 */
@@ -791,10 +798,11 @@
         (system === 'utterances' ? (current === 'dark' ? 'github-dark' : 'github-light') : current);
     }
 
-    function syncTheme() {
-      if (section.getAttribute('data-follow-os') === 'true') return;
+    /** frame 传 null 时现场重新查一次（iframe 可能是 lazy 之后才创建的） */
+    function applyTheme(frame) {
+      if (followOS) return;
       if (!PROTOCOL[system]) return; /* valine / disqus 不归这里管 */
-      var frame = mount.querySelector('iframe');
+      frame = frame || mount.querySelector('iframe');
       if (!frame || !frame.contentWindow) return;
       var name = themeName();
       try {
@@ -806,33 +814,48 @@
       } catch (error) { /* 跨域被拒就放弃，评论本身仍然可用 */ }
     }
 
+    var retryTimers = [];
+    function applyThemeWithRetry(frame) {
+      applyTheme(frame);
+      retryTimers.forEach(clearTimeout);
+      retryTimers = [120, 400, 1000, 2200].map(function (delay) {
+        return setTimeout(function () { applyTheme(frame); }, delay);
+      });
+    }
+
+    /* 骨架只负责骨架，绝不在这里同步主题（否则提前 markLoaded 一次就把
+       后面的主题同步整条短路掉） */
     var loaded = false;
     function markLoaded() {
       if (loaded) return;
       loaded = true;
       body.classList.add('is-loaded');
-      syncTheme();
     }
 
-    function watchFrame(frame) {
-      if (!frame) return;
-      if (frame.dataset.monishBound === '1') return;
+    function bindFrame(frame) {
+      if (!frame || frame.dataset.monishBound === '1') return;
       frame.dataset.monishBound = '1';
-      on(frame, 'load', markLoaded);
+      on(frame, 'load', function () {
+        markLoaded();
+        applyThemeWithRetry(frame);
+      });
       // 某些情况下 iframe 在我们挂上监听前就已经 load 完了
       try {
-        if (frame.contentDocument && frame.contentDocument.readyState === 'complete') markLoaded();
+        if (frame.contentDocument && frame.contentDocument.readyState === 'complete') {
+          markLoaded();
+          applyThemeWithRetry(frame);
+        }
       } catch (error) { /* 跨域读不到 contentDocument，忽略 */ }
     }
 
-    watchFrame(mount.querySelector('iframe'));
+    bindFrame(mount.querySelector('iframe'));
 
     /* 脚本是 async 加载的，iframe 出现时间不确定 —— 用 MutationObserver
        盯着挂载点，而不是轮询。 */
     if ('MutationObserver' in window) {
       var observer = new MutationObserver(function () {
         var frame = mount.querySelector('iframe');
-        if (frame) watchFrame(frame);
+        if (frame) bindFrame(frame);
         // valine / disqus 之类不一定注入 iframe，有内容出现就当作能看了
         else if (mount.children.length) setTimeout(markLoaded, 320);
       });
@@ -842,7 +865,22 @@
     /* 兜底：脚本被墙 / 加载失败时骨架不能永远转下去 */
     setTimeout(markLoaded, 4000);
 
-    root.addEventListener('monish:themechange', syncTheme);
+    /* 评论区滚进视口时再补一次 —— giscus 带 data-loading="lazy"，
+       iframe 可能是用户快滚到时才创建的 */
+    if ('IntersectionObserver' in window) {
+      var seen = new IntersectionObserver(function (entries) {
+        entries.forEach(function (entry) {
+          if (!entry.isIntersecting) return;
+          seen.disconnect();
+          applyThemeWithRetry(null);
+        });
+      }, { rootMargin: '220px 0px' });
+      seen.observe(section);
+    }
+
+    root.addEventListener('monish:themechange', function () { applyTheme(); });
+    // 从 bfcache 恢复时 iframe 状态会被保留，需要重新对齐
+    on(window, 'pageshow', function () { applyTheme(); });
   }
 
   // -------------------------------------------------------------------------

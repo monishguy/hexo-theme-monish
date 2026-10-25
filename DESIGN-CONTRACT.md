@@ -575,11 +575,19 @@ color: var(--text-faint);
   给 `.comments-body` 加 `.is-loaded`，骨架 `display: none`、内容淡入。
   没有这一步，慢网络下评论区会是一块**突然撑开的空白**，把页面顶得跳一下。
 - **兜底**：4s 后无论如何标记 loaded，脚本被墙时骨架不能永远转。
+  > `markLoaded` 只负责骨架，**绝不能顺带同步主题** —— 它带 `if (loaded) return`，
+  > 一旦把主题同步写在里面，提前触发一次（4s 兜底）就把后面的同步整条短路掉。
+  > v2.1.1 就是这么错的：页面一加载就是深色时评论区停在白色。
 - **深浅色跟随站点，不跟系统**：giscus 收
   `{giscus:{setConfig:{theme}}}`（origin `https://giscus.app`），
   utterances 收 `{type:'set-theme'}`（origin `https://utteranc.es`）。
   触发源是 `monish.js` 在 `<html>` 上派发的 **`monish:themechange`**（`bubbles: true`，
   detail `{mode, theme}`）。`comments.follow_os_theme: true` 时才改用系统偏好。
+  > **不能只在 iframe `load` 时发一次**：giscus 是 iframe load **之后**才在自己的
+  > 文档里挂 message 监听器的，此刻发出的 setConfig 会被丢掉。表现就是
+  > 「浅色页面手动切深色能变色，一上来就是深色则永远白」。
+  > 所以 `applyTheme(-WithRetry)` 在 load 后按 120/400/1000/2200ms 补发，
+  > 并在评论区进入视口、`pageshow`（bfcache 恢复）时再补。setConfig 幂等，重复发无副作用。
 - **配置缺失不渲染空壳**：`system` 指定的那家没配好时模板整体不输出，同时在
   **构建期** `console.warn` 打出缺哪一项 —— 免得部署后只看到一个空评论区。
 
