@@ -23,6 +23,7 @@
 - [站点配置](#站点配置)
 - [主题配置逐项说明](#主题配置逐项说明)
 - [字体](#字体)
+- [分类：文件夹即分类](#分类文件夹即分类)
 - [动效](#动效)
 - [404 页面](#404-页面)
 - [三种主题模式](#三种主题模式)
@@ -52,6 +53,7 @@
 - **列表页**：归档（按月 / 按年）、分类、标签，全部收进同一张内容卡，观感一致。
 - **文章页**：超粗标题 + 等宽日期 / 标签 / 元信息（作者、阅读时长、字数、分类、更新日期）、目录 TOC（**默认收起**、展开有高度动画、滚动高亮）、上一篇/下一篇、版权声明、代码块（语言标签 + 复制按钮 + 语法着色）、图片灯箱。
 - **搜索**：可选的客户端本地搜索，构建时生成 `search.json`。
+- **分类**：把文章放进 source/_posts 下的文件夹即可，文件夹名就是分类（多级文件夹 = 多级分类），没放文件夹的归「未分类」——不用手写 front-matter。
 - **评论**：支持 **giscus**（GitHub Discussions）/ **utterances**（GitHub Issues）/ Valine / Disqus，默认关闭；自带加载骨架，并跟随站点深浅色切换。
 - **无障碍**：「跳到主要内容」、`aria-label`、`aria-current`、键盘可达、`:focus-visible`；正文与标签的灰色都按 AA 4.5:1 取值。
 - **响应式**：断点 `≤1200 / ≤900 / ≤768 / ≤480`；≤900px 左栏折成吸顶顶栏 + 抽屉菜单，另含打印样式。
@@ -512,6 +514,71 @@ v2 用三个字体角色，全部可换：
 > 样式表覆盖 —— 所以**不要在自定义 CSS 里直接写 `--accent`，请在 `:root` 覆盖
 > `--user-accent`**（或在 `_config.yml` 里改 `appearance.accent`）。
 
+## 分类：文件夹即分类
+
+不用在每篇文章的 front-matter 里手写 `categories:`，**把文章放进 `source/_posts` 下的文件夹即可**：
+
+```
+source/_posts/
+├── ct1/
+│   ├── test01.md          → 分类 ct1
+│   └── ts.md              → 分类 ct1
+├── 技术/
+│   └── Kotlin/
+│       └── 协程.md        → 分类 技术 > Kotlin（Hexo 层级分类）
+├── 冒个泡.md              → 分类「未分类」
+└── 周日记10_17.md         → 分类「未分类」
+```
+
+生成结果：
+
+| 页面 | 内容 |
+| --- | --- |
+| `/categories/` | `ct1`（2 篇）、`未分类`（7 篇）… |
+| `/categories/ct1/` | ct1 下的文章列表 |
+| 文章页 meta | `分类：ct1`（可点，跳到分类页） |
+
+```yaml
+# themes/monish/_config.yml
+categories:
+  from_folder: true        # 关掉就完全回到 Hexo 原生行为（只认 front-matter）
+  uncategorized: 未分类    # 不在任何文件夹里的文章归到这里；留空 = 不归类
+  override_front_matter: false  # true = 文件夹覆盖 front-matter 里的 categories
+```
+
+规则细节：
+
+- **作者显式写的优先**。文章 front-matter 里写了 `categories:` 时，默认不再用文件夹覆盖
+  （`override_front_matter: true` 可以反过来）。
+- **多级文件夹 = 多级分类**，`_posts/技术/Kotlin/x.md` → `/categories/技术/Kotlin/`。
+- **判断依据是 `post.raw`**，不是 `post.categories` —— 后者是本主题写进去的关系，
+  再拿它判断「作者有没有写」会把自动分类误认成手写的。
+- 实现放在 `scripts/categories.js`，用 `before_generate` 过滤器写入 Hexo 的 Category 模型。
+  只有写进模型，`/categories/` 列表页、`/categories/<名字>/` 详情页、文章页分类链接才会
+  **自动全部成立**；模板里硬算的话三处都得各写一遍。
+
+### ⚠️ 放进文件夹会改变文章 URL
+
+这是 Hexo 的原生行为，不是本主题加的：`permalink` 里的 `:title` 取的是 slug，
+而子目录文章的 slug 会带上目录，于是
+
+```
+_posts/test01.md        → /2026/10/24/test01/
+_posts/ct1/test01.md    → /2026/10/24/ct1/test01/    ← 多了 ct1
+```
+
+把一篇老文章挪进分类文件夹，它的**已有外链会失效**。想让 URL 不受文件夹影响，
+把站点 `_config.yml` 的 `permalink` 从 `:title` 换成 **`:name`**
+（`:name` 是 slug 的文件名部分）：
+
+```yaml
+# 站点 _config.yml
+permalink: :year/:month/:day/:name/
+```
+
+改完 `_posts/ct1/test01.md` 仍然是 `/2026/10/24/test01/`。
+注意扁平化后**不同分类文件夹里的同名文件会撞 URL**，命名时避开。
+
 ## 动效
 
 主题的动效遵循一条原则：**只动 `transform` 和 `opacity`**（GPU 合成，不触发重排），
@@ -793,6 +860,7 @@ themes/monish/
 ├── scripts/
 │   ├── helpers.js               # Hexo helper + 构建期 filter（搜索索引 / 代码块语言标签）
 │   ├── generator.js             # 生成 /404.html（主题 source/ 里的文件不会被渲染成页面）
+│   ├── categories.js            # 把 _posts 下的文件夹名写成文章分类（before_generate）
 │   └── i18n.js                  # 读取主题语言包（按站点 language 合并）
 ├── source/
 │   ├── fonts/                   # 自托管 woff2 ×7 + LICENSES.txt

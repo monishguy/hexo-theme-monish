@@ -70,6 +70,24 @@ posts:
   date_format: YYYY-MM-DD # 卡片/文章日期格式（Moment.js 语法）
   card_min_width: 300px # 卡片最小宽度（响应式栅格）
   columns: 3 # 大屏列数 1~4
+# ---------------------------------------------------------------------------
+# 分类：把 source/_posts 下的文件夹名当作分类
+# ---------------------------------------------------------------------------
+categories:
+  # 开启后（默认）：
+  #   _posts/ct1/test01.md     → 分类 ct1         → /categories/ct1/
+  #   _posts/技术/Kotlin/x.md  → 分类 技术 > Kotlin（Hexo 层级分类）
+  #   _posts/随手记.md         → 分类「未分类」
+  # 关掉就完全回到 Hexo 原生行为：只认 front-matter 里的 categories。
+  from_folder: true
+
+  # 不在任何文件夹里的文章归到这个分类。留空则不给它们分类。
+  uncategorized: 未分类
+
+  # 文章 front-matter 已经写了 categories 时，是否仍用文件夹覆盖。
+  # 默认 false = 作者显式写的优先，文件夹只用来「补空缺」。
+  override_front_matter: false
+
 
 # ---------------------------------------------------------------------------
 # 作者 —— 左栏那块「虚线圆圈头像 + 名字」

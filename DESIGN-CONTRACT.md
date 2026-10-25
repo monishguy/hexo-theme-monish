@@ -159,6 +159,11 @@ features:
   progress_bar: true      # 阅读进度条
   page_transition: true   # 页面切换过渡（原生跨文档 View Transitions，纯 CSS）
   pjax: true              # 旧键，等价于 page_transition（没有真 PJAX 实现）
+# 分类：把 source/_posts 下的文件夹名当作分类
+categories:
+  from_folder: true        # 关掉 = 完全回到 Hexo 原生（只认 front-matter）
+  uncategorized: 未分类    # 不在任何文件夹里的文章归到这里；留空 = 不归类
+  override_front_matter: false  # true = 文件夹覆盖 front-matter 的 categories
 
 # 第三方
 analytics:
@@ -808,6 +813,40 @@ if(m!=='auto')e.setAttribute('data-theme',m);else e.setAttribute('data-theme',d)
 > 因此 CSS 的自动分支可以只用 `html[data-theme="dark"]`，无需媒体查询——但为
 > 无 JS 场景，CSS 仍需保留 `@media (prefers-color-scheme: dark)` 作为兜底
 > （用 `html:not([data-theme])` 限定，避免与显式选择冲突）。
+
+---
+
+## 7b. 构建期脚本（`scripts/*.js`）
+
+主题自带 4 个 Hexo 脚本，都在**构建期**运行，不产生任何运行时依赖：
+
+| 文件 | 挂的钩子 | 作用 |
+| --- | --- | --- |
+| `helpers.js` | helper + `after_post_render` | `monish_config()` / `monish_t()` / 摘要字数等；注入代码块工具条与 `.code-scroll` |
+| `i18n.js` | 读取语言包 | 按站点 `language` 合并主题语言包 |
+| `generator.js` | `generator` | 产出 `/404.html` |
+| `categories.js` | `before_generate` | 把 `_posts` 下的文件夹名写成文章分类 |
+
+### 文件夹 → 分类（`categories.js`）
+
+`_posts/ct1/x.md` → 分类 `ct1`；`_posts/技术/Kotlin/x.md` → `技术 > Kotlin`；
+`_posts/x.md` → 配置里的 `未分类`。
+
+三条硬约定：
+
+1. **必须写进 Hexo 的 Category 模型**（`post.setCategories()`），不能只在模板里算 ——
+   只有进了模型，`/categories/` 列表页、`/categories/<名>/` 详情页、文章页分类链接
+   才会自动全部成立。
+2. **时机必须是 `before_generate`**。`before_post_render` 太晚：post 的 categories
+   关系在 `processor/post.js` 里就已按 front-matter 建好，而渲染发生在 generate 阶段。
+   `setCategories` 是异步写库的，过滤器要**返回 Promise** 让 Hexo 等它写完再进生成器，
+   否则 `/categories/` 读到的还是旧关系。
+3. **判断「作者有没有写 front-matter」要看 `post.raw`，不能看 `post.categories`** ——
+   后者是本脚本写进去的关系，跑过一次就非空了，第二次构建会把自动分类误判成手写的，
+   于是文章换文件夹也不会更新。
+
+> ⚠️ 子目录会改变文章 URL（Hexo 原生行为，`:title` 取的是带上目录的 slug）。
+> 想保持扁平 URL 就把站点 `permalink` 用 `:name` 而不是 `:title`。
 
 ---
 
