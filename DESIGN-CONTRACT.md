@@ -561,6 +561,15 @@ color: var(--text-faint);
 
 - **四种系统**：`giscus`（GitHub Discussions，推荐）/ `utterances`（GitHub Issues，
   只需仓库名，最省事）/ `valine` / `disqus`。
+- **作用范围**：配置键是 `post.comments`，所以**文章页默认有评论、独立页默认没有**。
+  独立页（如 `/about/`、`/friends/`）想在某一页开评论，在它的 front-matter 写
+  `comments: true`。
+
+  > 实现上**不能**用 `page.comments === true` 判断：Hexo 的 Page 模型 schema 里
+  > `comments` 的默认值就是 `true`（`hexo/dist/models/page.js`），那个条件恒成立。
+  > 要区分「显式写了」和「默认值」，只能回原始 front-matter —— `Page.raw` 由
+  > `processor/post.js` 赋成整个文件原文，`page.ejs` 只在开头的 `---` 区块里
+  > 正则找 `^comments:\s*true$`，正文代码块里出现同样字样不会误判。
 - **骨架 → 内容**：`.comments-body` 默认显示 `.comments-skeleton`、`.comments-mount`
   是 `opacity: 0`。iframe 的 `load` 事件（或非 iframe 系统挂载点出现内容 320ms 后）
   给 `.comments-body` 加 `.is-loaded`，骨架 `display: none`、内容淡入。

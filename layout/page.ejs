@@ -35,14 +35,18 @@ var hasToc = page.toc && cfg.post.toc && /<h[1-6][^>]*id=/i.test(page.content ||
     </div>
   <% } else { %>
     <% if (hasToc){ %>
-      <div class="post-toc" id="post-toc">
-        <button class="post-toc-toggle" id="post-toc-toggle" type="button" aria-expanded="true" aria-controls="post-toc-nav">
+      <%# 与 layout/post.ejs 保持完全一致：默认收起 + .post-toc-body 高度动画包裹层。
+         两处必须同构，否则独立页的目录会是「默认展开且无动画」的另一种行为。 %>
+      <div class="post-toc is-collapsed" id="post-toc">
+        <button class="post-toc-toggle" id="post-toc-toggle" type="button" aria-expanded="false" aria-controls="post-toc-nav">
           <span class="fa fa-list-ul" aria-hidden="true"></span>
-          <%= monish_t('toc') %>
+          <span class="post-toc-label"><%= monish_t('toc') %></span>
         </button>
-        <nav class="post-toc-nav" id="post-toc-nav" aria-label="<%= monish_t('toc') %>">
-          <%- toc(page.content, { class: 'toc', list_number: false, max_depth: cfg.post.toc_depth || 3 }) %>
-        </nav>
+        <div class="post-toc-body">
+          <nav class="post-toc-nav" id="post-toc-nav" aria-label="<%= monish_t('toc') %>">
+            <%- toc(page.content, { class: 'toc', list_number: false, max_depth: cfg.post.toc_depth || 3 }) %>
+          </nav>
+        </div>
       </div>
     <% } %>
 
@@ -50,6 +54,23 @@ var hasToc = page.toc && cfg.post.toc && /<h[1-6][^>]*id=/i.test(page.content ||
       <%- page.content %>
     </div>
 
-    <%- partial('_partial/comments') %>
+    <%#
+      独立页默认不显示评论（配置键本来就叫 post.comments）。
+      想在某一页开评论，在它的 front-matter 里写 `comments: true`。
+
+      注意：不能直接判断 `page.comments === true` —— Hexo 的 Page 模型
+      schema 里 comments 的默认值就是 true（node_modules/hexo/dist/models/page.js），
+      那个判断恒成立。要区分「显式写了」和「默认值」，只能回原始 front-matter：
+      Page.raw 由 processor/post.js 赋成整个文件原文（含 front-matter）。
+      只在前半段的 --- 区块里找，正文代码块里出现同样字样不会误判。
+    %>
+    <%
+    var rawFmMatch = String(page.raw || '').match(/^---\r?\n([\s\S]*?)\r?\n---/);
+    var fmText = rawFmMatch ? rawFmMatch[1] : '';
+    var wantsComments = /^comments\s*:\s*true\s*$/m.test(fmText);
+    %>
+    <% if (wantsComments){ %>
+      <%- partial('_partial/comments') %>
+    <% } %>
   <% } %>
 </article>
