@@ -541,6 +541,16 @@ color: var(--text-faint);
 3. **`figure.highlight` 里的 `pre` 要 `overflow: visible`**（用
    `.monish-prose .highlight pre` 压过 `.monish-prose pre`），否则会出现两条横向滚动条。
 
+还有一条**改 DOM 时极易漏掉的耦合**：
+
+4. **「首行让开工具条」的规则必须写成 `.code-toolbar + .code-scroll td.code pre`**。
+   工具条是 `position: absolute` 贴在右上角的，不占流内高度，所以代码首行与行号槽
+   首行都要自己往下让出一行的高度（`padding-block-start: calc(--space-2 + 1.5rem)`）。
+   当初插入 `.code-scroll` 时这条规则还写着 `.code-toolbar + table`（相邻兄弟），
+   于是**整条让位规则静默失效**，表现就是「语言标签压住代码第一行」。
+   另外单位必须是 **`rem` 不是 `em`**：`.code-language` 是 12px、代码是 `.875rem` 14px，
+   用 `em` 会让两列各算出 18px / 21px，**每一行的行号都比代码行偏 2px**。
+
 行号槽 `td.gutter` 用 `position: sticky; inset-inline-start: 0` + 不透明底色，
 横滚时固定在左侧、代码从底下滑过。
 

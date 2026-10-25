@@ -499,10 +499,21 @@ html[data-animation="false"] .post-toc:not(.is-collapsed) .toc li {
   color: var(--accent-strong);
 }
 
-/* 首行代码让开工具条高度（用相邻兄弟选择器，无需 :has()） */
-.highlight > .code-toolbar + table td.code pre,
-.highlight > .code-toolbar + table td.gutter pre {
-  padding-block-start: calc(var(--space-2) + 1.5em);
+/* 首行代码让开工具条高度。
+   工具条是 absolute 贴在卡片右上角的，不占流内高度，所以代码首行（以及行号槽
+   首行）必须自己往下让出一行的高度，否则语言标签和复制按钮会压在第一行代码上。
+
+   ⚠️ 选择器必须穿过 `.code-scroll`：v2.1.0 给 `<table>` 套了横向滚动容器之后，
+   原来的 `.code-toolbar + table`（相邻兄弟）就再也匹配不上，这条让位规则曾
+   整个失效 —— 表现就是「第一行代码和语言标签重叠」。
+   行号槽和代码列要**同时**让位，否则行号和代码行会错开。
+
+   单位必须用 rem 而不是 em：`.code-language` 的字号是 --fs-label(12px)、
+   代码是 .875rem(14px)，用 em 会让两列各自算出 18px / 21px，
+   于是**每一行行号都比代码行高 2px**（曾实测 diff 恒为 -2）。 */
+.highlight > .code-toolbar + .code-scroll td.code pre,
+.highlight > .code-toolbar + .code-scroll td.gutter pre {
+  padding-block-start: calc(var(--space-2) + 1.5rem);
 }
 
 .highlight figcaption,
