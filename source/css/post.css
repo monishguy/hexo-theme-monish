@@ -19,33 +19,122 @@
   display: inline-flex;
   align-items: center;
   gap: var(--space-2);
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
   color: var(--text);
   font-family: var(--font-mono);
   font-size: var(--fs-label);
   letter-spacing: var(--ls-label);
   text-transform: uppercase;
+  text-align: start;
+  cursor: pointer;
 }
 
+/* 展开/收起的小三角：跟着 aria-expanded 旋转 */
 .post-toc-toggle::after {
   content: "\25BE";
+  margin-inline-start: auto;
   font-size: .8em;
   color: var(--text-muted);
-  transition: transform var(--speed-fast) var(--ease);
+  transition: transform var(--speed) var(--ease-out-expo);
 }
 
 .post-toc-toggle[aria-expanded="false"]::after {
   transform: rotate(-90deg);
 }
 
-/* 默认展开（无 JS 也可读）；JS 折叠时把 aria-expanded 置 false，
-   同时兼容 .post-toc.is-open 作为展开态标记。 */
-.post-toc-nav {
-  display: block;
-  margin-top: var(--space-3);
+/* 展开/收起的动画：
+   grid-template-rows 在 1fr ↔ 0fr 之间过渡，能动画到「内容的真实高度」，
+   比 max-height 写死一个魔数更稳（目录长短差异很大）。
+   .post-toc-nav 作为 grid item 必须 min-height:0 + overflow:hidden，
+   否则 0fr 那一行会被内容顶开、根本收不起来。 */
+.post-toc-body {
+  display: grid;
+  grid-template-rows: 1fr;
+  transition: grid-template-rows var(--speed) var(--ease-out-expo);
 }
 
-.post-toc:not(.is-open) .post-toc-toggle[aria-expanded="false"] + .post-toc-nav {
-  display: none;
+.post-toc.is-collapsed .post-toc-body {
+  grid-template-rows: 0fr;
+}
+
+.post-toc-nav {
+  display: block;
+  min-height: 0;
+  overflow: hidden;
+  margin-top: var(--space-3);
+  /* 目录本身也做一个轻微的下降落定，让展开不只是「高度变高」 */
+  opacity: 1;
+  transform: none;
+  transition:
+    opacity var(--speed-fast) var(--ease-out-expo),
+    transform var(--speed) var(--ease-out-expo);
+}
+
+.post-toc.is-collapsed .post-toc-nav {
+  margin-top: 0;
+  opacity: 0;
+  transform: translateY(-6px);
+}
+
+/* 展开且目录很长时，内部自己滚（超过 45vh 就封顶），不把正文顶到很远。
+   只在展开态给 overflow:auto —— 收起过程中必须保持 hidden 才能裁剪。 */
+.post-toc:not(.is-collapsed) .post-toc-nav {
+  max-height: 45vh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+}
+
+/* 目录条目：展开时逐条淡入（延迟只写在展开态，收起时立即开始） */
+.post-toc.is-collapsed .toc a {
+  transition-delay: 0ms;
+}
+
+.post-toc:not(.is-collapsed) .toc li {
+  animation: monish-toc-item 260ms var(--ease-out-expo) both;
+}
+
+.post-toc:not(.is-collapsed) .toc li:nth-child(1) { animation-delay: 40ms; }
+.post-toc:not(.is-collapsed) .toc li:nth-child(2) { animation-delay: 60ms; }
+.post-toc:not(.is-collapsed) .toc li:nth-child(3) { animation-delay: 80ms; }
+.post-toc:not(.is-collapsed) .toc li:nth-child(4) { animation-delay: 100ms; }
+.post-toc:not(.is-collapsed) .toc li:nth-child(5) { animation-delay: 120ms; }
+.post-toc:not(.is-collapsed) .toc li:nth-child(n+6) { animation-delay: 140ms; }
+
+@keyframes monish-toc-item {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* 动画关闭 / 降级时：目录直接到终态，不要有高度过渡 */
+html[data-animation="false"] .post-toc-body,
+html[data-animation="false"] .post-toc-nav {
+  transition: none;
+}
+
+html[data-animation="false"] .post-toc:not(.is-collapsed) .toc li {
+  animation: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .post-toc-body,
+  .post-toc-nav {
+    transition-duration: .01ms;
+  }
+
+  .post-toc:not(.is-collapsed) .toc li {
+    animation: none;
+  }
 }
 
 .post-toc .toc,
@@ -852,4 +941,94 @@ html[data-theme="dark"] .highlight {
 
 .comments:empty {
   margin-top: 0;
+}
+
+/* 评论区标题：和正文其它小标签同一套等宽大写 */
+.comments-title {
+  margin-block-end: var(--space-4);
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: var(--fs-label);
+  font-weight: 500;
+  letter-spacing: var(--ls-label);
+  text-transform: uppercase;
+}
+
+/* 挂载点：iframe 出现后 .comments-body 加 .is-loaded，骨架淡出、内容淡入。
+   这样网络慢的时候评论区是一块安静的骨架，而不是突然撑开的空白。 */
+.comments-body {
+  position: relative;
+}
+
+.comments-mount {
+  opacity: 0;
+  transform: translateY(6px);
+  transition:
+    opacity var(--speed-medium) var(--ease-out-expo),
+    transform var(--speed-medium) var(--ease-out-expo);
+}
+
+.comments-body.is-loaded .comments-mount {
+  opacity: 1;
+  transform: none;
+}
+
+/* 加载骨架：三条灰条，加载完直接移出布局 */
+.comments-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding-block: var(--space-2);
+  transition: opacity var(--speed-fast) var(--ease);
+}
+
+.comments-body.is-loaded .comments-skeleton {
+  display: none;
+}
+
+.comments-skeleton-bar {
+  height: 14px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-3);
+  /* 缓慢呼吸，表示「在加载」而不是「加载完了但没内容」 */
+  animation: monish-skeleton 1.8s var(--ease-in-out-quart) infinite;
+}
+
+.comments-skeleton-bar:nth-child(2) {
+  width: 88%;
+  animation-delay: 120ms;
+}
+
+.comments-skeleton-bar--short {
+  width: 56%;
+  animation-delay: 240ms;
+}
+
+@keyframes monish-skeleton {
+  0%, 100% { opacity: .45; }
+  50% { opacity: 1; }
+}
+
+/* iframe 别把卡片撑破：giscus/utterances 自己会算高度，这里只兜底宽度 */
+.comments-mount iframe {
+  width: 100%;
+  border: 0;
+  color-scheme: normal;
+}
+
+html[data-animation="false"] .comments-mount,
+html[data-animation="false"] .comments-skeleton-bar {
+  transition: none;
+  animation: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .comments-skeleton-bar {
+    animation: none;
+    opacity: .7;
+  }
+
+  .comments-mount {
+    transition-duration: .01ms;
+  }
 }

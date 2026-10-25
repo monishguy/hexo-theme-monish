@@ -157,7 +157,8 @@ features:
   copy_code: true         # 代码块复制按钮
   back_to_top: true
   progress_bar: true      # 阅读进度条
-  pjax: false             # 预留，默认关闭
+  page_transition: true   # 页面切换过渡（原生跨文档 View Transitions，纯 CSS）
+  pjax: true              # 旧键，等价于 page_transition（没有真 PJAX 实现）
 
 # 第三方
 analytics:
@@ -165,6 +166,16 @@ analytics:
   gauges:
 favicon:                  # 留空则不输出 shortcut icon 链接（避免指向不存在的文件）
 ```
+
+> `features.page_transition` 的判定顺序（`_partial/head.ejs`）：显式配了
+> `page_transition` 就用它；否则回退旧键 `pjax`；都没有则默认开。
+> 再与 `appearance.enable_animation` 取与。关掉时连 `@view-transition` 的声明
+> 都不会输出，等于这条特性不存在。
+>
+> 评论区（`post.comments`）的完整 schema 见 `_config.yml` 内注释；要点是
+> `system` 支持 `giscus | utterances | valine | disqus`，其中前两个是 GitHub 评论，
+> 且 `giscus`/`utterances` 各有 `theme_light` / `theme_dark` / `follow_os_theme`
+> 三个键控制深浅色来源。
 
 ---
 
@@ -401,14 +412,21 @@ color: var(--text-faint);
     </dl>
   </header>
 
-  <div class="post-toc" id="post-toc"> …目录，结构同 v1… </div>
+  <%# 目录：默认收起，展开/收起是 grid-template-rows 动画 %>
+  <div class="post-toc is-collapsed" id="post-toc">
+    <button class="post-toc-toggle" id="post-toc-toggle" type="button"
+            aria-expanded="false" aria-controls="post-toc-nav">…目录 ▾…</button>
+    <div class="post-toc-body">            <!-- grid 容器：1fr ↔ 0fr -->
+      <nav class="post-toc-nav" id="post-toc-nav">…toc() 输出…</nav>
+    </div>
+  </div>
 
   <div class="card-body monish-prose" itemprop="articleBody"> …正文… </div>
 
   <footer class="card-foot">
     <div class="post-copyright">…</div>
     <nav class="post-nav">…上一篇 / 下一篇…</nav>
-    <section class="comments" id="comments">…</section>
+    <section class="comments" id="comments" data-system="giscus">…见 §3.8b…</section>
   </footer>
 </article>
 ```
@@ -419,8 +437,25 @@ color: var(--text-faint);
 - 归档 / 分类 / 标签页：`.card` 内放列表或分组，沿用 `.archive-groups` / `.archive-group*` /
   `.term-card*` / `.term-index*`（v1 类名保留，样式按 v2 重做）。
 - **列表型页面（归档/分类/标签）不再有侧栏 widget**：`sidebar.*` 配置保留但桌面布局改为
-  左栏 rail + 主区内容卡，**不再渲染 `.sidebar-col` / `.widget*`**。模板侧的
-  `_partial/sidebar.ejs` 与 `_widget/*.ejs` 保留为「可选侧栏」但默认不启用。
+  左栏 rail + 主区内容卡，**不再渲染 `.sidebar-col` / `.widget*`**。
+
+#### 3.5a 目录（默认收起 + 高度动画）
+
+四条硬约定，改动前先读：
+
+1. **默认收起由服务端渲染**：模板直接输出 `class="post-toc is-collapsed"` 与
+   `aria-expanded="false"`。不能在 JS 启动时才收起 —— 那会先闪一下展开态。
+2. **收起态不能用 `hidden`**：`hidden` 把 `display` 变成 `none`，而 `display` 不可过渡。
+   收起用 class，实际动画在 `.post-toc-body` 的
+   `grid-template-rows: 1fr ↔ 0fr` 上（能动画到内容真实高度，不需要 max-height 魔数）。
+3. **`.post-toc-nav` 是 grid item，必须 `min-height: 0` + `overflow: hidden`**，
+   否则 0fr 那行会被内容顶开、根本收不起来。
+4. **可访问性**：收起时给 `.post-toc-nav` 加 `inert`（由 JS 加，不写进模板），
+   这样目录里的链接不会被 Tab 到。**没有 JS 时**由 `head.ejs` 的 `<noscript>` 样式
+   强制 `grid-template-rows: 1fr` 展开 —— 不能把目录彻底锁死。
+
+展开态额外：`.post-toc-nav` 的 `max-height: 45vh` + `overflow-y: auto`（长目录内部滚动），
+目录条目按 `monish-toc-item` 逐条淡入（延迟只写在展开态，收起时立刻开始）。
 
 ### 3.5b 404 页（独立整页，由生成器产出）
 
@@ -508,6 +543,60 @@ color: var(--text-faint);
 
 行号槽 `td.gutter` 用 `position: sticky; inset-inline-start: 0` + 不透明底色，
 横滚时固定在左侧、代码从底下滑过。
+
+### 3.8b 评论区（v2.1 重做：GitHub 评论优先）
+
+```html
+<section class="comments" id="comments" data-system="giscus"
+         data-follow-os="false" data-theme-light="light" data-theme-dark="dark">
+  <h3 class="comments-title">评论</h3>
+  <div class="comments-body" id="comments-body" data-reveal>
+    <div class="comments-skeleton" aria-hidden="true">…3 条骨架…</div>
+    <div class="comments-mount" id="comments-mount">
+      <!-- giscus / utterances / valine / disqus 的第三方脚本塞在这里 -->
+    </div>
+  </div>
+</section>
+```
+
+- **四种系统**：`giscus`（GitHub Discussions，推荐）/ `utterances`（GitHub Issues，
+  只需仓库名，最省事）/ `valine` / `disqus`。
+- **骨架 → 内容**：`.comments-body` 默认显示 `.comments-skeleton`、`.comments-mount`
+  是 `opacity: 0`。iframe 的 `load` 事件（或非 iframe 系统挂载点出现内容 320ms 后）
+  给 `.comments-body` 加 `.is-loaded`，骨架 `display: none`、内容淡入。
+  没有这一步，慢网络下评论区会是一块**突然撑开的空白**，把页面顶得跳一下。
+- **兜底**：4s 后无论如何标记 loaded，脚本被墙时骨架不能永远转。
+- **深浅色跟随站点，不跟系统**：giscus 收
+  `{giscus:{setConfig:{theme}}}`（origin `https://giscus.app`），
+  utterances 收 `{type:'set-theme'}`（origin `https://utteranc.es`）。
+  触发源是 `monish.js` 在 `<html>` 上派发的 **`monish:themechange`**（`bubbles: true`，
+  detail `{mode, theme}`）。`comments.follow_os_theme: true` 时才改用系统偏好。
+- **配置缺失不渲染空壳**：`system` 指定的那家没配好时模板整体不输出，同时在
+  **构建期** `console.warn` 打出缺哪一项 —— 免得部署后只看到一个空评论区。
+
+### 3.8c 页面切换过渡（跨文档 View Transitions）
+
+```css
+@view-transition { navigation: auto; }   /* 由 head.ejs 按配置内联声明 */
+.main { view-transition-name: main; }    /* 只有主区参与过渡 */
+::view-transition-old(root),
+::view-transition-new(root) { animation: none; }  /* 左栏/页脚/滚动条纹丝不动 */
+```
+
+- **为什么用原生而不是 JS PJAX**：静态站换页本来就要重新执行第三方脚本（评论、搜索、
+  统计），PJAX 得自己接管历史记录、滚动位置、脚本重放，任一环漏了就是「换页后评论区消失」
+  这类幽灵 bug。跨文档 View Transition 由浏览器负责，back/forward、滚动恢复、SEO 全天然正确。
+- **只给 `.main` 起名字**是关键手法：起了名字的元素会从 root 快照里被摘出来单独动画，
+  root 组清空动画后就瞬时切换 —— 于是左栏、页脚、滚动指示条完全不参与，视觉上只有
+  右栏内容卡在动（旧页上移淡出 180ms，新页从下方浮入 380ms，`--ease-out-expo`）。
+- **快照与入场动画的冲突**：新文档的快照是在「首帧渲染后」抓的，此时页内入场动画才刚开始
+  （约 1 帧），会被抓成几乎透明 → 过渡会闪空。所以页内入场动画必须**只在浏览器不支持
+  View Transition 时才跑**：`@supports not (view-transition-name: none)`。
+  文章页在那一支里拆成四段依次入场（`.card-head` → `.post-toc` → `.card-body` → `.card-foot`，
+  延迟 20/90/130/170ms）。
+- `@supports` 只能近似判断（Chrome 111+ 有 `view-transition-name`，跨文档过渡要 126+），
+  111~125 会落在「既没过渡也没入场动画」的窄区间 —— 页面本身完全正常，可接受。
+- `prefers-reduced-motion: reduce` 时 `@view-transition { navigation: none }`，连快照都不做。
 
 ### 3.9 状态类汇总（v2）
 
@@ -655,15 +744,29 @@ powered_by: 由 %s 强力驱动
 | `Monish.theme.apply()` | 仅应用当前存储值 |
 | `Monish.toast(msg)` | 轻提示（用于“已复制”） |
 
+**自定义事件**：`theme.apply()` 每次生效后会在 `<html>` 上派发
+`monish:themechange`（`bubbles: true`，`detail = { mode, theme }`）。
+评论区靠它同步 giscus / utterances 的 iframe 主题。加新的一次性集成时挂在
+`document` 或 `window` 上都能收到。
+
 初始化顺序（`DOMContentLoaded`）：
-1. `theme.apply()`
+1. `theme.apply()`（并派发 `monish:themechange`）
 2. `<html>.classList.add('hero-ready')`
-3. header 滚动监听（`is-scrolled`）、阅读进度（`#progress-bar`）、返回顶部（`#back-to-top`）
+3. 滚动监听：`is-scrolled`（≤900 顶栏）、竖向滚动轨道（`#scroll-track` 夹在卡片内 +
+   `--progress`）、返回顶部、滚动中滑块 `.is-active`
 4. `[data-reveal]` 的 IntersectionObserver（无 IO 时直接加 `.is-revealed`）
-5. 目录高亮 + `#post-toc-toggle` 折叠
+5. 目录：**默认收起**（读模板已渲染的 `.is-collapsed`）→ 补 `inert`；点击切换 class +
+   `aria-expanded`，高度动画由 CSS 的 `grid-template-rows` 完成；滚动高亮用 IO
 6. 代码复制按钮（追加进 `.code-toolbar`；无工具条时退回 `figure.highlight` 或 `<pre>`）
 7. lightbox
 8. 搜索（`features.search` 为 true 时才输出搜索界面）
+9. 评论区：`#comments-body.is-loaded`（iframe load / 挂载点出现内容 / 4s 兜底）
+   + `monish:themechange` → `postMessage` 给 iframe
+
+> **JS 不参与页面切换**：换页过渡完全由 `head.ejs` 内联的
+> `@view-transition { navigation: auto }` 驱动，没有 PJAX、没有 popstate 接管、
+> 没有脚本重放。新增的页内交互只需在 `boot()` 里加初始化函数即可，
+> 不用考虑「换页后要重新绑定」的问题。
 
 `<head>` 内联阻塞脚本（防 FOUC，必须内联、必须在样式表之前）：
 ```js
@@ -704,12 +807,12 @@ if(m!=='auto')e.setAttribute('data-theme',m);else e.setAttribute('data-theme',d)
 | --- | --- | --- |
 | **0** | `source/css/fonts.css` | **7 条 `@font-face`（§5.2）**，必须最先引入 |
 | 1 | `source/css/variables.css` | §2 全部设计令牌；`:root` 浅色、`html[data-theme="dark"]` 深色、`@media (prefers-color-scheme: dark)` 兜底（限定 `html:not([data-theme])`） |
-| 2 | `source/css/base.css` | reset / `box-sizing` / 滚动条 / `body` 排版 / 标题 / 链接 / 选中态 / `.no-scroll` / `.is-hidden` / `.sr-only` / `:focus-visible` / `[data-reveal]` / `.is-revealed` / 打印 |
+| 2 | `source/css/base.css` | reset / `box-sizing` / 滚动条 / `body` 排版 / 标题 / 链接 / 选中态 / `.no-scroll` / `.is-hidden` / `.sr-only` / `:focus-visible` / `[data-reveal]` / `.is-revealed` / **页面切换过渡（`.main { view-transition-name }` + `::view-transition-*` + `monish-vt-in/out`）** / **非 VT 浏览器的 `monish-page-in` 入场动画** / 打印 |
 | 3 | `source/css/shell.css` | **v2 新增**：`.shell`（大圆角白卡）/ `.rail` / `.rail-top` / `.rail-slogan` / `.rail-author` / `.author-avatar` / `.author-name` / `.rail-bottom` / `.rail-nav` / `.rail-link` / `.rail-utils` / `.util-btn` / `.main`（含左侧竖分隔线）/ `.scroll-track` / `.scroll-thumb` / `.skip-link` / 移动顶栏与 `.nav-backdrop` / `.nav-drawer` / `.drawer-link` |
 | 4 | `source/css/hero.css` | `.hero`（仅 `layout: full/center/banner` 用）/ `.hero-bg` / `.hero-overlay` / `.hero-inner` / `.hero-title` / `.hero-subtitle` / `.hero-meta` / `.hero-scroll` / `.hero-particles` / `hero-ready` 入场动画 |
 | 5 | `source/css/post-list.css` | `.post-list` / `.post-row` / `.post-row-date` / `.date-month` / `.date-day` / `.post-pill` / `.post-pill-title` / `.post-pill-excerpt` / `.tag-chip` / `.meta-item` / `.pagination` / `.page-number` / `.extend` / `.empty-state` |
 | 6 | `source/css/page.css` | `.card` / `.card-head` / `.post-date` / `.card-title` / `.card-meta` / `.card-body` / `.card-foot` / `.archive-groups` / `.archive-group*` / `.term-card*` / `.term-index*` / `.tagcloud*` / `.breadcrumb*` / `.btn*` / **404 独立整页 `.error-page` / `.error-home` / `.error-heading` / `.error-code` / `.error-title` / `.error-desc` / `.error-links` / `.error-link`** |
-| 7 | `source/css/post.css` | `.post-toc*` / `.monish-prose` 全量正文排版 / `.highlight` 代码块（`.code-toolbar` / `.code-language` / **`.code-scroll` 横向滚动容器** / 行号槽 `td.gutter`（sticky）/ `--hl-*` 令牌着色）/ `.code-copy` / `.post-copyright` / `.post-nav` / `.comments` |
+| 7 | `source/css/post.css` | `.post-toc*` / `.monish-prose` 全量正文排版 / `.highlight` 代码块（`.code-toolbar` / `.code-language` / **`.code-scroll` 横向滚动容器** / 行号槽 `td.gutter`（sticky）/ `--hl-*` 令牌着色）/ `.code-copy` / `.post-copyright` / `.post-nav` / `.comments`  / **评论 `.comments*`（`.comments-title` / `.comments-body` / `.comments-mount` / `.comments-skeleton*`，含 `is-loaded` 态）** |
 | 8 | `source/css/footer.css` | `.site-footer` / `.footer-inner` / `.footer-copyright` / `.footer-powered` / `.footer-theme-name` / `.footer-icp` / `.back-to-top` |
 | 9 | `source/css/extras.css` | `.lightbox*` / `.search-box` / `.search-field` / `.search-input` / `.search-results` / `.search-result-*` / `.search-mask` / `.toast` |
 | 10 | `source/css/responsive.css` | 全部媒体查询：`≤1200px` / `≤900px`（rail 折叠）/ `≤768px` / `≤480px`；抽屉、单列、表格横向滚动、`@media print` |

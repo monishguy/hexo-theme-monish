@@ -147,7 +147,41 @@ post:
   excerpt_link_icon: true
   comments:
     enable: false
-    system: valine # valine | disqus | giscus
+    # giscus（GitHub Discussions，推荐）| utterances（GitHub Issues，最省事）
+    # | valine | disqus
+    system: giscus
+
+    # ---- giscus：基于 GitHub Discussions ----
+    # 1) 仓库要 public，并在 Settings → General → Features 里勾上 Discussions
+    # 2) 装 giscus App：https://github.com/apps/giscus
+    # 3) 打开 https://giscus.app/zh-CN 填仓库名，把下面四个值抄过来
+    giscus:
+      repo: # 例如: monishguy/blog-comments
+      repo_id: # 例如: R_kgDOLxxxxxx
+      category: # 例如: Announcements（讨论分类名）
+      category_id: # 例如: DIC_kwDOLxxxxxx
+      mapping: pathname # pathname | url | title | og:title | specific
+      strict: false # mapping 用 specific 时是否强制匹配
+      reactions_enabled: true
+      input_position: top # top | bottom
+      lang: zh-CN
+      # 评论区跟随站点深浅色自动切换（通过 iframe postMessage），不用手动配
+      theme_light: light
+      theme_dark: dark
+      # true = 跟着系统深浅色；false（默认）= 跟着站点右上角的切换按钮
+      follow_os_theme: false
+
+    # ---- utterances：基于 GitHub Issues，只需要仓库名 ----
+    # 1) 仓库要 public
+    # 2) 装 utterances App：https://github.com/apps/utterances
+    utterances:
+      repo: # 例如: monishguy/blog-comments
+      issue_term: pathname # pathname | url | title | og:title
+      label: # 给自动创建的 issue 打的标签，可空
+      theme_light: github-light
+      theme_dark: github-dark
+      follow_os_theme: false
+
     valine:
       enable: false
       appId:
@@ -155,13 +189,6 @@ post:
       placeholder:
       lang: zh-cn
     disqus_shortname:
-    giscus:
-      repo:
-      repo_id:
-      category:
-      category_id:
-      mapping: pathname
-      lang: zh-CN
 
 # ---------------------------------------------------------------------------
 # 归档页
@@ -209,7 +236,18 @@ features:
   copy_code: true # 代码块复制按钮
   back_to_top: true
   progress_bar: true # 顶部阅读进度条
-  pjax: false # 预留，当前版本未启用
+
+  # 页面切换过渡。用浏览器原生的「跨文档 View Transitions」实现（纯 CSS）：
+  # 换页时左栏和页脚完全不动，只有右栏内容卡淡入淡出 + 轻微上滑。
+  # Chrome/Edge 126+、Safari 18.2+ 生效；不支持的浏览器自动退化成
+  # 「新页面整体淡入」，不会有任何报错或白屏。
+  # 关闭它就设 false（同时也会关掉非支持浏览器的入场动画）。
+  page_transition: true
+
+  # 旧键，仅为兼容保留：等价于 page_transition。
+  # 注意本主题**没有**用 JS 做 PJAX 内容替换 —— 那种做法要自己接管
+  # 历史记录、滚动位置和第三方脚本（评论等）的重新执行，比原生方案更脆。
+  pjax: true
 
 # ---------------------------------------------------------------------------
 # 第三方

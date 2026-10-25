@@ -112,6 +112,15 @@ var monoFamily = String(appearance.mono_font || 'JetBrains Mono').replace(/"/g, 
   </script>
 
   <%# ---- 主题变量注入：只写用户真正配过的项，默认值由 variables.css 拥有 ---- %>
+  <%
+  /* 页面切换过渡：优先读新键 features.page_transition，没配则回退旧键 features.pjax */
+  var rawFeatures = (cfg.raw && cfg.raw.features) || {};
+  var pageTransition;
+  if (rawFeatures.page_transition !== undefined) pageTransition = !!rawFeatures.page_transition;
+  else if (rawFeatures.pjax !== undefined) pageTransition = !!rawFeatures.pjax;
+  else pageTransition = true;
+  pageTransition = pageTransition && appearance.enable_animation !== false;
+  %>
   <style>
     <% if (rootVars.length) { %>:root { <%- rootVars.join(';') %> }<% } %>
     <% if (cfg.appearance.enable_transition){ %>
@@ -119,11 +128,29 @@ var monoFamily = String(appearance.mono_font || 'JetBrains Mono').replace(/"/g, 
     <% } %>
   </style>
 
+  <%# ---- 页面切换过渡：浏览器原生的「跨文档 View Transitions」，纯 CSS。
+       只在这里按配置决定要不要声明，关掉配置就等于整条特性不存在。
+       具体动画在 base.css（.main 的 view-transition-name + 分组动画）。 ---- %>
+  <% if (pageTransition){ %>
+    <style>
+      @view-transition { navigation: auto; }
+      /* 用户要求减少动效时连过渡本身都不做（省掉快照开销，而不是放一个 0ms 动画） */
+      @media (prefers-reduced-motion: reduce) {
+        @view-transition { navigation: none; }
+      }
+    </style>
+  <% } %>
+
   <%# ---- 无 JS 兜底：保证首屏文字与列表始终可见（JS 正常时不会命中） ---- %>
   <noscript>
     <style>
       .hero-title, .hero-subtitle, .hero-meta, .hero-scroll { opacity: 1 !important; transform: none !important; }
       [data-reveal] { opacity: 1 !important; transform: none !important; }
+      /* 目录「默认收起」是给有 JS 的用户的；没有 JS 就强制展开，别把目录锁死 */
+      .post-toc-body { grid-template-rows: 1fr !important; }
+      .post-toc-nav { opacity: 1 !important; transform: none !important; }
+      .post-toc-toggle { pointer-events: none; }
+      .post-toc-toggle::after { display: none; }
     </style>
   </noscript>
 

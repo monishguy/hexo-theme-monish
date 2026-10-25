@@ -1,67 +1,127 @@
 <%
 /**
- * 评论区。支持 valine / disqus / giscus 三种系统，默认关闭。
- * 设计契约 §1（post.comments）。
+ * 评论区。设计契约 §3.8。
+ *
+ * 支持四种系统，其中前两种是「GitHub 评论」：
+ *   giscus      —— 基于 GitHub Discussions，功能最全（推荐）
+ *   utterances  —— 基于 GitHub Issues，只需要仓库名，最省事
+ *   valine      —— 第三方（LeanCloud）
+ *   disqus      —— 第三方
+ *
+ * 三条实现约定：
+ * 1. 第三方脚本塞进 `#comments-mount`，外面套一层 `.comments-body`。
+ *    iframe 还没出现时显示骨架，出现后加 `.is-loaded` 淡入 —— 否则评论区
+ *    在网络慢时会是一块突然撑开的空白，把页面顶得跳一下。
+ * 2. 深浅色**跟随站点**的切换按钮（`html[data-theme]`），不是跟系统。
+ *    通过 iframe 的 postMessage 切换，监听 `monish:themechange` 事件。
+ * 3. 系统启用了但关键配置没填时不渲染空壳，而是在**构建期**打一条 warn，
+ *    免得部署后只看到一个空评论区又不知道差什么。
  */
 var cfg = monish_config();
-var comments = cfg.post.comments || {};
+var comments = (cfg.post && cfg.post.comments) || {};
 var enabled = comments.enable && page.comments !== false;
-var system = comments.system || 'valine';
-var hasValine = comments.valine && comments.valine.enable && comments.valine.appId && comments.valine.appKey;
+var system = String(comments.system || 'giscus').toLowerCase();
+
+var giscus = comments.giscus || {};
+var utterances = comments.utterances || {};
+var valine = comments.valine || {};
+
+var hasGiscus = !!(giscus.repo && giscus.repo_id && giscus.category_id);
+var hasUtterances = !!utterances.repo;
+var hasValine = !!(valine.enable && valine.appId && valine.appKey);
 var hasDisqus = !!comments.disqus_shortname;
-var hasGiscus = comments.giscus && comments.giscus.repo && comments.giscus.repo_id;
+
+var available = { giscus: hasGiscus, utterances: hasUtterances, valine: hasValine, disqus: hasDisqus };
+
+/* 构建期提示：启用了但没配好，比运行时空白好排查 */
+if (enabled && !available[system]) {
+  var missing = {
+    giscus: 'giscus.repo / giscus.repo_id / giscus.category_id（去 https://giscus.app/zh-CN 生成）',
+    utterances: 'utterances.repo（并在仓库装 https://github.com/apps/utterances）',
+    valine: 'valine.appId / valine.appKey',
+    disqus: 'comments.disqus_shortname'
+  }[system] || '（未知 system：' + system + '）';
+  console.warn('[monish] post.comments 已启用，但 system=' + system + ' 缺少配置：' + missing);
+}
+
+var show = enabled && available[system];
+var osTheme = !!(available[system] && (system === 'giscus' ? giscus : utterances).follow_os_theme);
 %>
-<% if (enabled && (hasValine || hasDisqus || hasGiscus)){ %>
-  <section class="comments" id="comments" aria-label="<%= monish_t('comments') %>">
+<% if (show){ %>
+  <section class="comments" id="comments" aria-label="<%= monish_t('comments') %>"
+           data-system="<%= system %>" data-follow-os="<%= osTheme ? 'true' : 'false' %>"
+           data-theme-light="<%= system === 'utterances' ? (utterances.theme_light || 'github-light') : (giscus.theme_light || 'light') %>"
+           data-theme-dark="<%= system === 'utterances' ? (utterances.theme_dark || 'github-dark') : (giscus.theme_dark || 'dark') %>">
     <h3 class="comments-title"><%= monish_t('comments') %></h3>
 
-    <% if (system === 'valine' && hasValine){ %>
-      <div class="vcomment" id="vcomments"></div>
-      <script src="//cdn.jsdelivr.net/npm/valine@1.5.1/dist/Valine.min.js"></script>
-      <script>
-        new Valine({
-          el: '#vcomments',
-          appId: '<%= comments.valine.appId %>',
-          appKey: '<%= comments.valine.appKey %>',
-          placeholder: '<%= (comments.valine.placeholder || monish_t('no_comment')).replace(/'/g, "\\'") %>',
-          path: '<%- url_for(page.path) %>',
-          lang: '<%= comments.valine.lang || "zh-cn" %>',
-          pageSize: 10,
-          avatar: 'mp',
-          recordIP: false
-        });
-      </script>
-    <% } else if (system === 'disqus' && hasDisqus){ %>
-      <div id="disqus_thread"></div>
-      <script>
-        var disqus_config = function () {
-          this.page.url = '<%- full_url_for(page.path) %>';
-          this.page.identifier = '<%= page._id %>';
-        };
-        (function () {
-          var d = document, s = d.createElement('script');
-          s.src = 'https://<%= comments.disqus_shortname %>.disqus.com/embed.js';
-          s.setAttribute('data-timestamp', +new Date());
-          (d.head || d.body).appendChild(s);
-        })();
-      </script>
-      <noscript><%= monish_t('no_comment') %></noscript>
-    <% } else if (system === 'giscus' && hasGiscus){ %>
-      <script src="https://giscus.app/client.js"
-              data-repo="<%= comments.giscus.repo %>"
-              data-repo-id="<%= comments.giscus.repo_id %>"
-              data-category="<%= comments.giscus.category %>"
-              data-category-id="<%= comments.giscus.category_id %>"
-              data-mapping="<%= comments.giscus.mapping || 'pathname' %>"
-              data-lang="<%= comments.giscus.lang || 'zh-CN' %>"
-              data-reactions-enabled="1"
-              data-emit-metadata="0"
-              data-input-position="bottom"
-              data-theme="preferred_color_scheme"
-              data-loading="lazy"
-              crossorigin="anonymous"
-              async>
-      </script>
-    <% } %>
+    <div class="comments-body" id="comments-body" data-reveal>
+      <%# 加载骨架：iframe 出现后由 JS 加 .is-loaded 淡出 %>
+      <div class="comments-skeleton" aria-hidden="true">
+        <span class="comments-skeleton-bar"></span>
+        <span class="comments-skeleton-bar"></span>
+        <span class="comments-skeleton-bar comments-skeleton-bar--short"></span>
+      </div>
+
+      <div class="comments-mount" id="comments-mount">
+        <% if (system === 'giscus'){ %>
+          <script src="https://giscus.app/client.js"
+                  data-repo="<%= giscus.repo %>"
+                  data-repo-id="<%= giscus.repo_id %>"
+                  data-category="<%= giscus.category || '' %>"
+                  data-category-id="<%= giscus.category_id %>"
+                  data-mapping="<%= giscus.mapping || 'pathname' %>"
+                  data-strict="<%= giscus.strict ? '1' : '0' %>"
+                  data-reactions-enabled="<%= giscus.reactions_enabled === false ? '0' : '1' %>"
+                  data-emit-metadata="0"
+                  data-input-position="<%= giscus.input_position || 'top' %>"
+                  data-theme="<%= osTheme ? 'preferred_color_scheme' : (giscus.theme_light || 'light') %>"
+                  data-lang="<%= giscus.lang || 'zh-CN' %>"
+                  data-loading="lazy"
+                  crossorigin="anonymous"
+                  async>
+          </script>
+        <% } else if (system === 'utterances'){ %>
+          <script src="https://utteranc.es/client.js"
+                  repo="<%= utterances.repo %>"
+                  issue-term="<%= utterances.issue_term || 'pathname' %>"
+                  <% if (utterances.label){ %>label="<%= utterances.label %>"<% } %>
+                  theme="<%= osTheme ? 'preferred-color-scheme' : (utterances.theme_light || 'github-light') %>"
+                  crossorigin="anonymous"
+                  async>
+          </script>
+        <% } else if (system === 'valine'){ %>
+          <div class="vcomment" id="vcomments"></div>
+          <script src="https://cdn.jsdelivr.net/npm/valine@1.5.1/dist/Valine.min.js"></script>
+          <script>
+            new Valine({
+              el: '#vcomments',
+              appId: '<%= valine.appId %>',
+              appKey: '<%= valine.appKey %>',
+              placeholder: '<%= String(valine.placeholder || monish_t('no_comment')).replace(/'/g, "\\'") %>',
+              path: '<%- url_for(page.path) %>',
+              lang: '<%= valine.lang || "zh-cn" %>',
+              pageSize: 10,
+              avatar: 'mp',
+              recordIP: false
+            });
+          </script>
+        <% } else if (system === 'disqus'){ %>
+          <div id="disqus_thread"></div>
+          <script>
+            var disqus_config = function () {
+              this.page.url = '<%- full_url_for(page.path) %>';
+              this.page.identifier = '<%= page._id %>';
+            };
+            (function () {
+              var d = document, s = d.createElement('script');
+              s.src = 'https://<%= comments.disqus_shortname %>.disqus.com/embed.js';
+              s.setAttribute('data-timestamp', +new Date());
+              (d.head || d.body).appendChild(s);
+            })();
+          </script>
+          <noscript><%= monish_t('no_comment') %></noscript>
+        <% } %>
+      </div>
+    </div>
   </section>
 <% } %>

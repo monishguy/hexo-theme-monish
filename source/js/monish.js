@@ -110,6 +110,18 @@
         toggle.setAttribute('title', text);
         toggle.setAttribute('aria-label', text);
       });
+
+      /* 广播主题变化，让不归 theme 管的东西自己跟上（评论区 iframe 就是
+         通过它切换 giscus / utterances 的深浅色）。用 CustomEvent 而不是
+         让评论模块去改 theme.toggle，避免两边互相依赖。
+         bubbles: 让 window / document 上的监听也能收到，不强制只能挂 <html>。 */
+      try {
+        root.dispatchEvent(new CustomEvent('monish:themechange', {
+          bubbles: true,
+          detail: { mode: mode, theme: resolved }
+        }));
+      } catch (error) { /* 极老的浏览器没有 CustomEvent 构造器，忽略 */ }
+
       return resolved;
     },
 
@@ -391,10 +403,34 @@
 
     var toggle = $('#post-toc-toggle');
     var nav = $('#post-toc-nav');
-    on(toggle, 'click', function () {
-      var collapsed = toc.classList.toggle('is-collapsed');
+
+    /**
+     * 收起态用 class + inert 表达，**不用 hidden**：
+     * hidden 会把 display 变成 none，而 display 不可过渡 —— 那样展开/收起
+     * 就只能硬切。实际的高度动画在 CSS 里由 .post-toc-body 的
+     * grid-template-rows: 1fr ↔ 0fr 完成（能动画到内容真实高度）。
+     * inert 负责同一件事的另一个维度：收起时目录里的链接不能被 Tab 到。
+     */
+    function setCollapsed(collapsed) {
+      toc.classList.toggle('is-collapsed', collapsed);
       toggle.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
-      if (nav) nav.hidden = collapsed;
+      if (nav) {
+        if (collapsed) nav.setAttribute('inert', '');
+        else nav.removeAttribute('inert');
+      }
+    }
+
+    // 服务端已渲染成收起态，这里补上 inert（放在 JS 里而不是模板，
+    // 是为了「没有 JS 时目录依然可读可点」）
+    setCollapsed(toc.classList.contains('is-collapsed'));
+
+    on(toggle, 'click', function () {
+      setCollapsed(!toc.classList.contains('is-collapsed'));
+    });
+
+    // 点目录里的链接后自动收起（窄屏尤其需要，否则目录会一直占着屏幕）
+    on(nav, 'click', function (event) {
+      if (event.target.closest('a') && window.innerWidth <= 900) setCollapsed(true);
     });
 
     var links = $$('.post-toc-nav a', toc);
@@ -724,6 +760,92 @@
   }
 
   // -------------------------------------------------------------------------
+  // 评论区（giscus / utterances 等）
+  // -------------------------------------------------------------------------
+  /**
+   * 两件事：
+   * 1. 骨架 → 内容的过渡：iframe 真正 load 之后再摘掉骨架，慢网络下不会
+   *    出现「一块突然撑开的空白把页面顶得跳一下」。
+   * 2. 让评论区跟着站点的深浅色切换（而不是跟系统）：giscus / utterances
+   *    都是通过 iframe 的 postMessage 换主题的。
+   */
+  function initComments() {
+    var section = $('#comments');
+    if (!section) return;
+    var body = $('#comments-body');
+    var mount = $('#comments-mount');
+    if (!body || !mount) return;
+
+    var system = section.getAttribute('data-system') || '';
+
+    /* 各家的 postMessage 协议不一样：giscus 收 {giscus:{setConfig:{theme}}}，
+       utterances 收 {type:'set-theme'}，域名也必须是精确的白名单。 */
+    var PROTOCOL = {
+      giscus: { origin: 'https://giscus.app' },
+      utterances: { origin: 'https://utteranc.es' }
+    };
+
+    function themeName() {
+      var current = root.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
+      return section.getAttribute('data-theme-' + current) ||
+        (system === 'utterances' ? (current === 'dark' ? 'github-dark' : 'github-light') : current);
+    }
+
+    function syncTheme() {
+      if (section.getAttribute('data-follow-os') === 'true') return;
+      if (!PROTOCOL[system]) return; /* valine / disqus 不归这里管 */
+      var frame = mount.querySelector('iframe');
+      if (!frame || !frame.contentWindow) return;
+      var name = themeName();
+      try {
+        if (system === 'giscus') {
+          frame.contentWindow.postMessage({ giscus: { setConfig: { theme: name } } }, PROTOCOL.giscus.origin);
+        } else if (system === 'utterances') {
+          frame.contentWindow.postMessage({ type: 'set-theme', theme: name }, PROTOCOL.utterances.origin);
+        }
+      } catch (error) { /* 跨域被拒就放弃，评论本身仍然可用 */ }
+    }
+
+    var loaded = false;
+    function markLoaded() {
+      if (loaded) return;
+      loaded = true;
+      body.classList.add('is-loaded');
+      syncTheme();
+    }
+
+    function watchFrame(frame) {
+      if (!frame) return;
+      if (frame.dataset.monishBound === '1') return;
+      frame.dataset.monishBound = '1';
+      on(frame, 'load', markLoaded);
+      // 某些情况下 iframe 在我们挂上监听前就已经 load 完了
+      try {
+        if (frame.contentDocument && frame.contentDocument.readyState === 'complete') markLoaded();
+      } catch (error) { /* 跨域读不到 contentDocument，忽略 */ }
+    }
+
+    watchFrame(mount.querySelector('iframe'));
+
+    /* 脚本是 async 加载的，iframe 出现时间不确定 —— 用 MutationObserver
+       盯着挂载点，而不是轮询。 */
+    if ('MutationObserver' in window) {
+      var observer = new MutationObserver(function () {
+        var frame = mount.querySelector('iframe');
+        if (frame) watchFrame(frame);
+        // valine / disqus 之类不一定注入 iframe，有内容出现就当作能看了
+        else if (mount.children.length) setTimeout(markLoaded, 320);
+      });
+      observer.observe(mount, { childList: true, subtree: true });
+    }
+
+    /* 兜底：脚本被墙 / 加载失败时骨架不能永远转下去 */
+    setTimeout(markLoaded, 4000);
+
+    root.addEventListener('monish:themechange', syncTheme);
+  }
+
+  // -------------------------------------------------------------------------
   // 启动
   // -------------------------------------------------------------------------
   // 入场标记：脚本位于 body 末尾，此时 HTML 已解析完，同步加 class 可让
@@ -743,6 +865,7 @@
     initCopyCode();
     initLightbox();
     initSearch();
+    initComments();
     root.classList.add('monish-ready');
   }
 

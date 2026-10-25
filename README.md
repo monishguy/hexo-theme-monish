@@ -50,9 +50,9 @@
 - **三种模式**：`auto`（跟随系统）/ `light` / `dark`，用户选择写入 `localStorage`，刷新保持；`<head>` 内联脚本防 FOUC。
 - **首屏两种模式**：`hero.layout: card`（默认，左栏大标题即首屏）/ `full`（全屏铺满强调色的独立首屏，下滑进入列表）/ `center` / `banner`。
 - **列表页**：归档（按月 / 按年）、分类、标签，全部收进同一张内容卡，观感一致。
-- **文章页**：超粗标题 + 等宽日期 / 标签 / 元信息（作者、阅读时长、字数、分类、更新日期）、目录 TOC（可折叠、滚动高亮）、上一篇/下一篇、版权声明、代码块（语言标签 + 复制按钮 + 语法着色）、图片灯箱。
+- **文章页**：超粗标题 + 等宽日期 / 标签 / 元信息（作者、阅读时长、字数、分类、更新日期）、目录 TOC（**默认收起**、展开有高度动画、滚动高亮）、上一篇/下一篇、版权声明、代码块（语言标签 + 复制按钮 + 语法着色）、图片灯箱。
 - **搜索**：可选的客户端本地搜索，构建时生成 `search.json`。
-- **评论**：支持 Valine / Disqus / Giscus（默认关闭）。
+- **评论**：支持 **giscus**（GitHub Discussions）/ **utterances**（GitHub Issues）/ Valine / Disqus，默认关闭；自带加载骨架，并跟随站点深浅色切换。
 - **无障碍**：「跳到主要内容」、`aria-label`、`aria-current`、键盘可达、`:focus-visible`；正文与标签的灰色都按 AA 4.5:1 取值。
 - **响应式**：断点 `≤1200 / ≤900 / ≤768 / ≤480`；≤900px 左栏折成吸顶顶栏 + 抽屉菜单，另含打印样式。
 - **纯 CSS + vanilla JS**：11 个 CSS 文件、1 个 JS 文件，无打包步骤；只有图标字体走 CDN，离线时降级为文字而不阻塞构建。
@@ -367,7 +367,32 @@ post:
   excerpt_link_icon: true  # 预留（当前模板未使用）
   comments:
     enable: false
-    system: valine        # valine | disqus | giscus
+    # giscus（GitHub Discussions，推荐）| utterances（GitHub Issues，最省事）
+    # | valine | disqus
+    system: giscus
+
+    giscus:
+      repo:               # monishguy/blog-comments
+      repo_id:            # R_kgDOLxxxxxx
+      category:           # Announcements
+      category_id:        # DIC_kwDOLxxxxxx
+      mapping: pathname   # pathname | url | title | og:title | specific
+      strict: false
+      reactions_enabled: true
+      input_position: top # top | bottom
+      lang: zh-CN
+      theme_light: light
+      theme_dark: dark
+      follow_os_theme: false  # false = 跟着站点切换按钮；true = 跟系统
+
+    utterances:
+      repo:               # monishguy/blog-comments
+      issue_term: pathname # pathname | url | title | og:title
+      label:
+      theme_light: github-light
+      theme_dark: github-dark
+      follow_os_theme: false
+
     valine:
       enable: false
       appId:
@@ -375,17 +400,28 @@ post:
       placeholder:
       lang: zh-cn
     disqus_shortname:
-    giscus:
-      repo:
-      repo_id:
-      category:
-      category_id:
-      mapping: pathname
-      lang: zh-CN
 ```
 
 - `toc` 只在正文存在 `h2`/`h3`（受 `toc_depth` 限制）时才有内容。
-- 评论三种系统互斥，只需填对应那一组；`enable: false` 时整段不输出。
+  **目录默认收起**，点标题展开；展开/收起是高度动画，目录很长时内部自己滚（封顶 45vh）。
+- 评论四种系统互斥，只需填对应那一组；`enable: false` 时整段不输出。
+  选了哪家但没配好时，模板**整体不渲染**，并在**构建期**打一条 warn 告诉你缺哪项 ——
+  不会出现一个空空的评论区。
+- 评论区跟随站点的深浅色切换（`theme_light` / `theme_dark` 就是给这一步用的），
+  不是跟系统；想跟系统就设 `follow_os_theme: true`。
+
+#### 怎么开通 GitHub 评论（giscus）
+
+1. **建一个公开仓库**专门放评论（推荐，比如 `your-name/blog-comments`）——
+   评论会变成这个仓库的 Discussions，不会污染代码仓库。
+2. 仓库 → **Settings → General → Features** → 勾上 **Discussions**。
+3. 装 giscus App：<https://github.com/apps/giscus>，授权到这个仓库。
+4. 打开 <https://giscus.app/zh-CN>，填仓库名，它会生成 4 个值
+   （`repo` / `repo_id` / `category` / `category_id`），抄进主题配置。
+5. `comments.enable: true` + `system: giscus`，重新 `hexo generate`。
+
+想要更省事就用 **utterances**（评论存成 Issues，只需要仓库名）：
+装 <https://github.com/apps/utterances>，然后 `system: utterances` + `utterances.repo` 填上即可。
 
 ### `archive` —— 归档页
 
@@ -494,11 +530,31 @@ v2 用三个字体角色，全部可换：
 
 具体有哪些动效：
 
+**页面级**
+
+- **换页过渡**（`features.page_transition`，默认开）：用浏览器原生的
+  **跨文档 View Transitions**（纯 CSS，零 JS）。换页时**左栏、页脚、滚动条完全不动**，
+  只有右栏内容卡在过渡：旧页轻轻上移淡出 180ms，新页从下方浮入 380ms。
+  支持 Chrome/Edge 126+、Safari 18.2+；其它浏览器自动退化成「新页面淡入上浮」。
+  > 为什么不用 JS PJAX：静态站换页要重新执行评论、搜索、统计等第三方脚本，
+  > PJAX 得自己接管历史记录、滚动恢复、脚本重放，任一环漏了就是「换页后评论区消失」
+  > 这种幽灵 bug。原生方案由浏览器负责，前进后退、滚动位置、SEO 全都天然正确。
+- **文章打开编排**：不支持 View Transition 的浏览器里，文章卡拆成四段依次入场
+  （标题 20ms → 目录 90ms → 正文 130ms → 页脚 170ms）。
+  支持 View Transition 的浏览器由换页过渡负责，页内入场动画会自动让位
+  （否则新页快照会抓到动画首帧，过渡会闪空）。
+
+**页内**
+
+- **目录展开/收起**：`.post-toc-body` 的 `grid-template-rows` 在 `1fr ↔ 0fr` 之间过渡，
+  动画到**内容真实高度**（不需要 max-height 魔数），配合目录条目逐条淡入与箭头旋转。
 - **滚动入场**：卡片、文章块、归档分组等带 `data-reveal` 的元素，从下方 14px 淡入上浮，
   同一组内按 `--stagger`（70ms）依次错峰。延迟按「同一父节点内第几个」算，所以首页第 30 张卡片不会等 2 秒。
 - **原生滚动驱动（渐进增强）**：正文里的 `h2`–`h4`、图片、代码块、引用、表格，在支持
   `animation-timeline: view()` 的浏览器里由 CSS 直接驱动（跑在合成线程上，零 JS）；
   不支持的浏览器（如 Firefox）静默退回上一条的 IntersectionObserver 版本。
+- **评论区**：脚本还没加载完时显示三条呼吸的骨架条；iframe `load` 后骨架移除、内容淡入
+  （否则慢网络下评论区会是一块突然撑开的空白，把页面顶得跳一下）。
 - **竖向滚动条**：滚动中滑块用 `scaleX(1.9)` 微微加宽并加深，停手 400ms 收回（iOS 手感）。
 - **卡片 hover**：药丸上浮 2px + 阴影加深 + 标题转强调色。
 - **正文链接**：hover 时下划线由 1px 加粗到 2px；指向外站的链接带 `↗`，hover 时右上角轻移。
@@ -507,10 +563,12 @@ v2 用三个字体角色，全部可换：
 - **主题切换**：`appearance.enable_transition: true` 时颜色过渡，不闪白。
 
 **降级**（`prefers-reduced-motion: reduce`）：所有动画/过渡收成 0.01ms，位移与缩放取消，
-但**内容一律给到终态而不是隐藏** —— 避免有人看到一片空白。用 `*` 通配符兜底，新加的动效不必回来补名单。
+换页连 View Transition 都不声明，但**内容一律给到终态而不是隐藏** —— 避免有人看到一片空白。
+用 `*` 通配符兜底，新加的动效不必回来补名单。
 
 **关闭动画**：`appearance.enable_animation: false` 会在 `<html>` 上写 `data-animation="false"`，
-滚动入场与原生滚动动画全部停用（元素直接是终态）。
+滚动入场、页面过渡、目录高度动画全部停用（元素直接是终态）。
+页面过渡还可以单独关：`features.page_transition: false`。
 
 ---
 
@@ -547,7 +605,8 @@ features:
   copy_code: true         # 代码块复制按钮
   back_to_top: true
   progress_bar: true      # 顶部阅读进度条
-  pjax: false             # 预留，当前版本未启用
+  page_transition: true   # 页面切换过渡（原生 View Transitions，纯 CSS）
+  pjax: true              # 旧键，等价于 page_transition
 ```
 
 ### `analytics` 与 `favicon`
@@ -825,6 +884,14 @@ cd themes/monish && npm test
 
 **6. 文章页没有目录（TOC）**
 需要 `post.toc: true`，且正文里有 `h2`/`h3`；层级由 `post.toc_depth` 控制。
+目录**默认是收起的**（点一下展开）。想改回默认展开：把 `layout/post.ejs` 里
+`class="post-toc is-collapsed"` 的 `is-collapsed` 去掉、`aria-expanded` 改成 `true` 即可
+（JS 会按模板渲染的状态初始化，不需要改别的）。
+
+**6b. 换页时没有过渡动画**
+`features.page_transition` 要开着（默认开），且浏览器得支持跨文档 View Transitions：
+Chrome / Edge 126+、Safari 18.2+。Firefox 目前不支持，会自动退化成「新页面淡入上浮」——
+这是预期行为，不是 bug。系统开了「减少动态效果」时也会整条关掉。
 
 **7. 首页没有摘要 / 摘要太长**
 `posts.excerpt_length: 120` 控制截断字数；设为 `0` 则只取 `<!-- more -->` 之前的内容。
@@ -843,7 +910,19 @@ appearance:
 `appearance.webfont: none`。
 
 **9. 评论区不显示**
-`post.comments.enable: true` 且 `system` 与对应配置（`valine` / `disqus` / `giscus`）都填好。
+`post.comments.enable: true`，且 `system` 指定的那家配齐了：
+
+| system | 必须配的键 |
+| --- | --- |
+| `giscus` | `giscus.repo` + `giscus.repo_id` + `giscus.category_id`（去 <https://giscus.app/zh-CN> 生成） |
+| `utterances` | `utterances.repo`（并装 <https://github.com/apps/utterances>） |
+| `valine` | `valine.enable: true` + `appId` + `appKey` |
+| `disqus` | `comments.disqus_shortname` |
+
+配了但漏项时 `hexo generate` 会在终端打一条
+`[monish] post.comments 已启用，但 system=… 缺少配置：…` 的 warn，按它补就行。
+另外 giscus 的仓库必须**公开**且**开了 Discussions**，否则评论区里会显示
+`giscus is not installed on this repository` 之类的提示。
 
 **10. 备案号 / 页脚版权不显示**
 `footer.icp` 留空则不显示备案；`footer.copyright` 留空则输出「© 年份 作者」。

@@ -256,13 +256,112 @@ button:focus:not(:focus-visible) {
   }
 }
 
-/* 动画关闭时始终可见、无位移 */
-body[data-animation="false"] [data-reveal],
-body[data-animation="false"] .monish-prose > :is(h2, h3, h4, figure, pre, blockquote, table) {
+/* 动画关闭时始终可见、无位移。
+   注意 data-animation 挂在 <html> 上（layout.ejs），不是 body —— 之前写成
+   body[...] 永远匹配不到，等于「关闭动画」这个开关一直是失效的。 */
+html[data-animation="false"] [data-reveal],
+html[data-animation="false"] .monish-prose > :is(h2, h3, h4, figure, pre, blockquote, table) {
   opacity: 1;
   transform: none;
   transition: none;
   animation: none;
+}
+
+/* ============================================================ 页面切换 */
+/* 跨文档 View Transition（@view-transition 由 head.ejs 按配置声明，纯 CSS）。
+   思路：
+   · 只给 .main 起 view-transition-name → 左栏、页脚、滚动条都留在 root 快照里
+   · root 的进出动画清空 → 它们瞬时切换，看起来就是「一动不动」
+   · 于是换页时只有右栏内容卡在动：旧页轻轻上移淡出，新页从下方浮上来
+   不支持的浏览器自动退化成下面的「入场动画」，不会白屏也不会报错。 */
+.main {
+  view-transition-name: main;
+}
+
+/* root 组不参与动画：左栏 / 页脚 / 滚动条保持纹丝不动 */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
+::view-transition-group(main) {
+  animation-duration: 380ms;
+  animation-timing-function: var(--ease-out-expo);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  ::view-transition-old(main) {
+    animation: 180ms var(--ease) both monish-vt-out;
+  }
+
+  ::view-transition-new(main) {
+    animation: 380ms var(--ease-out-expo) both monish-vt-in;
+  }
+}
+
+@keyframes monish-vt-out {
+  to {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes monish-vt-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+}
+
+/* 动画整体关闭时连过渡名字都不给，等于退回普通跳转 */
+html[data-animation="false"] .main {
+  view-transition-name: none;
+}
+
+/* ---------------------------------------------------------------------
+   非 View Transition 浏览器的「页面打开」动画
+   @supports 只能近似判断（Chrome 111+ 有 view-transition-name，跨文档
+   过渡要 126+），所以 111~125 会出现「既没过渡也不进入场动画」的窄区间 ——
+   可接受：那几版本来就已经是很新的浏览器，页面本身没有任何问题。
+   --------------------------------------------------------------------- */
+@keyframes monish-page-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@supports not (view-transition-name: none) {
+  @media (prefers-reduced-motion: no-preference) {
+    /* 文章页：一张卡拆成四段依次入场（标题 → 目录 → 正文 → 页脚） */
+    html[data-page="post"] .card > .card-head,
+    html[data-page="post"] .card > .post-toc,
+    html[data-page="post"] .card > .card-body,
+    html[data-page="post"] .card > .card-foot {
+      animation: monish-page-in 460ms var(--ease-out-expo) both;
+    }
+
+    html[data-page="post"] .card > .card-head { animation-delay: 20ms; }
+    html[data-page="post"] .card > .post-toc { animation-delay: 90ms; }
+    html[data-page="post"] .card > .card-body { animation-delay: 130ms; }
+    html[data-page="post"] .card > .card-foot { animation-delay: 170ms; }
+
+    /* 其它页面：整个主区淡入上浮（列表项自己还有 data-reveal 的错峰） */
+    html:not([data-page="post"]) .main {
+      animation: monish-page-in 420ms var(--ease-out-expo) both;
+    }
+  }
+
+  html[data-animation="false"] .main,
+  html[data-animation="false"] .card > * {
+    animation: none;
+  }
 }
 
 /* ------------------------------------------------------------------ 打印 */

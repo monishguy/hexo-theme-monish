@@ -61,18 +61,24 @@ var author = page.author || cfg.site.author || cfg.site.title;
   </header>
 
   <% if (hasToc){ %>
-    <div class="post-toc" id="post-toc">
-      <button class="post-toc-toggle" id="post-toc-toggle" type="button" aria-expanded="true" aria-controls="post-toc-nav">
+    <%# 默认收起：服务端直接渲染 is-collapsed，避免「先展开再收起」的闪烁。
+       无 JS 时由 head.ejs 的 <noscript> 样式强制展开，不会把目录彻底锁死。 %>
+    <div class="post-toc is-collapsed" id="post-toc">
+      <button class="post-toc-toggle" id="post-toc-toggle" type="button" aria-expanded="false" aria-controls="post-toc-nav">
         <span class="fa fa-list-ul" aria-hidden="true"></span>
-        <%= monish_t('toc') %>
+        <span class="post-toc-label"><%= monish_t('toc') %></span>
       </button>
-      <nav class="post-toc-nav" id="post-toc-nav" aria-label="<%= monish_t('toc') %>">
-        <%- toc(page.content, {
-          class: 'toc',
-          list_number: false,
-          max_depth: cfg.post.toc_depth || 3
-        }) %>
-      </nav>
+      <%# .post-toc-body 是 grid 容器：grid-template-rows 在 1fr ↔ 0fr 之间过渡，
+          可以动画到「内容实际高度」，不需要写 max-height 魔数。 %>
+      <div class="post-toc-body">
+        <nav class="post-toc-nav" id="post-toc-nav" aria-label="<%= monish_t('toc') %>">
+          <%- toc(page.content, {
+            class: 'toc',
+            list_number: false,
+            max_depth: cfg.post.toc_depth || 3
+          }) %>
+        </nav>
+      </div>
     </div>
   <% } %>
 
