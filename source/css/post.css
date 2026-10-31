@@ -1380,22 +1380,28 @@ html[data-animation="false"] .monish-prose abbr[data-tip]::before {
 .md-alert--warning { --alert-hue: #A8863F; }   /* 琥珀 */
 .md-alert--caution { --alert-hue: #A85B5B; }   /* 红 */
 
+/* 标题字号取正文 h3 那一档（1.3rem）。原来用 --fs-label（12px）做「小标签」，
+   在这个尺寸的块里显得像个脚注，用户反馈「至少要 h3/h2 那么大」。
+   图标用 em 跟着标题走，不用单独调。 */
 .md-alert-title {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
-  margin: 0 0 var(--space-2);
+  gap: var(--space-3);
+  margin: 0 0 var(--space-3);
   color: color-mix(in srgb, var(--alert-hue) 82%, var(--text));
   font-family: var(--font-body);
-  font-size: var(--fs-label);
+  font-size: 1.3rem;
   font-weight: 700;
-  letter-spacing: .06em;
-  text-transform: uppercase;
+  line-height: 1.3;
+  /* 标题级字号下再全大写会显得很吵；中文本来也不受影响 */
+  letter-spacing: -.01em;
 }
 
 .md-alert-icon {
-  font-size: 1.05em;
+  font-size: 1em;
   line-height: 1;
+  /* 图标视觉重心比文字略高，往下压一点点更齐 */
+  transform: translateY(.04em);
 }
 
 .md-alert-body > :first-child {
