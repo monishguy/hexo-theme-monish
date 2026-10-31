@@ -22,6 +22,13 @@ var isSplash = pageType === 'home' && isHomeFirst && cfg.hero.enable !== false &
 var displayMode = isSplash ? 'splash' : 'card';
 
 var bodyClass = ['monish', isHomeFirst ? 'is-home' : 'is-page'];
+
+/* 浏览量：静态站没有后端，数字由第三方服务在前端填。
+   这里只算出「要不要加载、用哪家」，真正的脚本注入放到 monish.js 里
+   （等 window load 之后再插，避免第三方接口慢/挂掉时把 load 事件拖住）。 */
+var pv = cfg.pageview || {};
+var pvProvider = String(pv.provider || 'vercount').toLowerCase();
+var pvOn = pv.enable !== false && pvProvider !== 'none' && is_post() && page.pageview !== false;
 %>
 <!DOCTYPE html>
 <html lang="<%= config.language || 'zh-CN' %>" data-theme-mode="auto" data-root="<%- url_for('/') %>"
@@ -31,6 +38,7 @@ var bodyClass = ['monish', isHomeFirst ? 'is-home' : 'is-page'];
       data-lightbox="<%= cfg.features.lightbox ? 'true' : 'false' %>"
       data-copy-code="<%= cfg.features.copy_code ? 'true' : 'false' %>"
       data-search="<%= cfg.features.search ? 'true' : 'false' %>"
+      data-pv="<%= pvOn ? pvProvider : '' %>"
       data-label-copy="<%= monish_t('copy') %>"
       data-label-copied="<%= monish_t('copied') %>"
       data-label-search-placeholder="<%= monish_t('search_placeholder') %>"

@@ -165,6 +165,13 @@ categories:
   uncategorized: 未分类    # 不在任何文件夹里的文章归到这里；留空 = 不归类
   override_front_matter: false  # true = 文件夹覆盖 front-matter 的 categories
 
+# 浏览量（「本文章被查看次数」）：静态站无后端，靠第三方计数服务，默认开启
+pageview:
+  enable: true             # 文章页 meta 里显示阅读数
+  provider: vercount       # vercount（默认，稳定）| busuanzi | none
+  label:                   # 留空用语言包 pageview（阅读 / Views / 閱讀 / 閲覧）
+  site_total: false        # true = 额外显示整站总浏览量
+
 # 第三方
 analytics:
   google_analytics:
@@ -493,6 +500,41 @@ color: var(--text-faint);
 静态站（GitHub Pages / Cloudflare Pages / Netlify / Vercel）对未知路径都会返回
 根目录的 `/404.html`，所以「不存在的页面进 404」由产出这个文件保证。
 
+### 3.5c 文章浏览量（`pageview.*`）
+
+静态站没有后端，所以计数只能靠第三方服务。默认 **开启**、provider 默认 `vercount`。
+
+产物（文章页 `card-meta` 内，位置在「字数」之后、「分类」之前）：
+
+```html
+<div class="meta-item" data-pageview>
+  <dt>阅读</dt>
+  <dd><span id="busuanzi_value_page_pv">—</span></dd>
+</div>
+```
+
+三条硬约定：
+
+1. **元素 id 必须叫 `busuanzi_value_page_pv`**（站点总量是 `busuanzi_value_site_pv`）。
+   Vercount 与不蒜子**都认这个 id**，所以换 provider 不用改模板。
+2. **脚本不能在 HTML 里静态引入**。第三方计数脚本（尤其不蒜子）没有超时，
+   接口挂住时会一直占着请求，写 `<script>` 会**拖住 `load` 事件**（实测卡到 30s+）。
+   正确做法：`monish.js` 的 `initPageview()` 在 `window.load` 之后动态注入。
+3. **provider 由 `<html data-pv="…">` 下发**，不要复用 `data-pageview` ——
+   该属性名已被 meta 项用作选择器（`$$('.meta-item[data-pageview]')`），
+   复用会让 `hide()` 把整个 `<html>` 隐藏掉。
+
+降级：6 秒内拿不到数字就把 `[data-pageview]` 加 `.is-hidden`，并给 `<html>` 加
+`.no-pageview`，当作该功能不存在，不留「阅读 —」半截内容。
+
+| provider | 地址 | 说明 |
+| --- | --- | --- |
+| `vercount`（默认） | `https://events.vercount.one/js` | 不蒜子替代品，内置 5s 超时、失败回退 `localStorage`；同时写 `busuanzi_value_*` 与 `vercount_value_*` |
+| `busuanzi` | `https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js` | 老牌，但数据接口目前常 502，脚本无超时 |
+| `none` | — | 等价于 `pageview.enable: false` |
+
+单篇关闭：文章 front-matter 写 `pageview: false`。
+
 ### 3.6 页脚
 
 ```html
@@ -760,12 +802,41 @@ CSS 不依赖图标，图标由模板写死。配置里的 `links` 键 → 图�
 | `jetbrains-mono-{400,500,700}.woff2` | `--font-mono` | JetBrains Mono 400 / 500 / 700 |
 
 - `fonts.css` 必须**第一个**引入（在 `variables.css` 之前），里面是 7 条 `@font-face`：
-  相对路径 `url("../fonts/xxx.woff2")`、`font-display: swap`、
+  相对路径 `url("../fonts/xxx.woff2")`、`font-display: optional`（见 §5.2b）、
   以及 fontsource 的 latin `unicode-range`（三款共用同一段，见文件内注释）。
 - `unicode-range` 让浏览器对中文**直接跳过**这些拉丁子集，由栈尾系统 CJK 字体承接。
 - 全部为 **SIL OFL 1.1**；来源、版本、许可证见 `source/fonts/LICENSES.txt`。
 - 三个角色名都可在 `appearance.display_font / body_font / mono_font` 里改；
   `appearance.webfont: none` 时 `head.ejs` 不引入 `fonts.css`，只用系统字体。
+
+### 5.2b 字体加载策略：为什么是 `font-display: optional`
+
+一个字体的生命周期有三个参数要一起看，缺一个就会「刷一下才变正常」：
+
+| 环节 | 做法 | 原因 |
+| --- | --- | --- |
+| 缓存 | 静态文件，URL 不带版本号 → 浏览器长期缓存 | 字体文件不随构建变化，不需要 cache-busting |
+| 提前拉取 | `head.ejs` 里对首屏字重发 `<link rel="preload" as="font" crossorigin>` | 在 CSS 解析完之前就开始下载；字体请求**必须带 `crossorigin`**（哪怕同源），否则和 `@font-face` 的请求会下载两份 |
+| 呈现时机 | `font-display: optional` | 见下 |
+
+`swap` / `optional` / `block` 的区别（这是「刷新时闪一下」的根因）：
+
+| 值 | 首绘 | 之后 |
+| --- | --- | --- |
+| `swap` | 立刻用回退字体 | 字体到了**再换** → 每次加载都看到一次跳字 |
+| `block` | 文字先**不可见**（约 3s） | 字体到了再显示；慢网会长时间白字 |
+| `optional` | 给字体一个很短窗口（约 100ms），到点没就绪就**整页沿用回退字体** | **不再中途替换** |
+
+主题选 `optional`：字体文件本来就会被缓存，第二次打开时它在窗口内就绪 →
+首绘即最终形态，没有任何跳变。第一次访问若网络慢，则整页用回退字体（不闪）。
+
+**实测数据**（本机、`hexo server`、刷新一次）：8 个 woff2 全部在 **152ms** 前就绪，
+首次内容绘制在 **180ms** → 字体全部赶在首绘之前，`optional` 下根本不会发生回退绘制。
+
+> ⚠️ `hexo server` **不发送任何缓存头**（无 `Cache-Control` / `ETag` / `Last-Modified`），
+> 所以本地预览时字体会被重新下载。这不影响最终效果（本地够快，仍赶在首绘前），
+> 但如果你在本地看到字体延迟，先确认不是这个原因 —— 生产静态托管（GitHub Pages
+> 等）会给 `max-age`，表现只会更好。
 
 ### 5.3 代码等宽栈的三条硬约定（v1.4 起，继续有效）
 
@@ -781,7 +852,7 @@ CSS 不依赖图标，图标由模板写死。配置里的 `links` 键 → 图�
 ## 6. i18n 键（`languages/*.yml`）
 
 模板只允许出现以下 `__()` 键（至少 `zh-CN`、`en`、`zh-TW`、`ja` 四份；其余语言缺失时 Hexo 回退 default）。
-**v1.3（共 68 键，四份语言包键集合必须与此完全一致）**。
+**v1.3（共 69 键，四份语言包键集合必须与此完全一致）**。
 
 ```
 home  archives  categories  category  tags  tag  about  friends
@@ -795,6 +866,7 @@ page  pages  total_posts  site_running  topics  author  copyright  published
 prev_page  next_page  more
 skip_to_content  sidebar  license_note
 alert_note  alert_tip  alert_important  alert_warning  alert_caution  footnotes  footnote_back
+pageview
 ```
 
 > v1.1 变更（Lead 通知）：新增 `no_posts` / `rss` / `pages` / `topics`；
@@ -860,6 +932,9 @@ powered_by: 由 %s 强力驱动
 8. 搜索（`features.search` 为 true 时才输出搜索界面）
 9. 评论区：`#comments-body.is-loaded`（iframe load / 挂载点出现内容 / 4s 兜底）
    + `monish:themechange` → `postMessage` 给 iframe
+10. 脚注：`initFootnotes()` —— 只做浮层位置测量与 `is-flip-start/end`（显隐在 CSS）
+11. 浏览量：`initPageview()` —— **在 `window.load` 之后**才动态注入第三方计数脚本
+    （静态 `<script>` 会拖住 load 事件，见 §3.5c）；6s 内没数字就把该项隐藏
 
 > **JS 不参与页面切换**：换页过渡完全由 `head.ejs` 内联的
 > `@view-transition { navigation: auto }` 驱动，没有 PJAX、没有 popstate 接管、

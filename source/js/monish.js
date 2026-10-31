@@ -914,6 +914,63 @@
     });
   }
   // -------------------------------------------------------------------------
+  // 浏览量（第三方计数服务）
+  // -------------------------------------------------------------------------
+  /**
+   * 静态站没有后端，数字由第三方服务在运行时填进 #busuanzi_value_* /
+   * #vercount_value_*。两条铁律：
+   *
+   * 1. **必须等 window load 之后再注入脚本**。第三方计数脚本（尤其不蒜子）
+   *    没有超时，接口挂住时会一直占着请求；直接写在 HTML 里会拖住 load 事件
+   *    （实测卡到 30s+）。计数晚几百毫秒出现完全没关系，但不能影响首屏。
+   * 2. 服务不可达时不能一直显示占位的「—」，超时就把整个 meta 项隐藏。
+   */
+  function initPageview() {
+    var provider = root.getAttribute('data-pv') || '';
+    if (!provider || provider === 'none') return;
+
+    var items = $$('.meta-item[data-pageview]');
+    if (!items.length) return;
+
+    var SOURCE = {
+      // 不蒜子：老牌，但接口经常 502，脚本本身没有超时
+      busuanzi: 'https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js',
+      // Vercount：不蒜子的替代品，内置 5s 超时、失败回退 localStorage 缓存，
+      // 同时支持 busuanzi_value_* 与 vercount_value_* 两种元素 id
+      vercount: 'https://events.vercount.one/js'
+    };
+    var url = SOURCE[provider];
+    if (!url) return;
+
+    function filled() {
+      var spans = $$('[id^="busuanzi_value_"], [id^="vercount_value_"]', items[0]);
+      if (!spans.length) return false;
+      return spans.some(function (el) {
+        return /\d/.test((el.textContent || '').trim());
+      });
+    }
+
+    function hide() {
+      items.forEach(function (el) { el.classList.add('is-hidden'); });
+      root.classList.add('no-pageview');
+    }
+
+    function load() {
+      var script = document.createElement('script');
+      script.async = true;
+      script.src = url;
+      script.onerror = hide;
+      document.body.appendChild(script);
+
+      setTimeout(function () {
+        if (!filled()) hide();
+      }, 6000);
+    }
+
+    if (document.readyState === 'complete') load();
+    else on(window, 'load', load);
+  }
+  // -------------------------------------------------------------------------
   // 启动
   // -------------------------------------------------------------------------
   // 入场标记：脚本位于 body 末尾，此时 HTML 已解析完，同步加 class 可让
@@ -935,6 +992,7 @@
     initSearch();
     initComments();
     initFootnotes();
+    initPageview();
     root.classList.add('monish-ready');
   }
 

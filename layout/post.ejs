@@ -10,6 +10,16 @@ var words = cfg.post.word_count ? monish_word_count(page.content) : 0;
 var minutes = cfg.post.reading_time ? monish_reading_time(page.content) : 0;
 var hasToc = cfg.post.toc && /<h[1-6][^>]*id=/i.test(page.content || '');
 var author = page.author || cfg.site.author || cfg.site.title;
+
+/* 浏览量：静态站没有后端，数字由第三方服务（默认不蒜子）在前端填。
+   配置见 _config.yml 的 pageview 段（默认开启）。
+   文章 front-matter 写 `pageview: false` 可以单独关掉某一篇。 */
+var pageview = cfg.pageview || {};
+var pageviewOn = pageview.enable !== false &&
+  String(pageview.provider || 'busuanzi').toLowerCase() !== 'none' &&
+  page.pageview !== false;
+var pageviewLabel = pageview.label || monish_t('pageview');
+var pageviewSiteTotal = pageview.site_total === true;
 %>
 <article class="card" id="content-card" itemscope itemtype="https://schema.org/BlogPosting">
   <header class="card-head">
@@ -39,6 +49,14 @@ var author = page.author || cfg.site.author || cfg.site.title;
         <div class="meta-item">
           <dt><%= monish_t('word_count') %></dt>
           <dd><%= words %></dd>
+        </div>
+      <% } %>
+      <% if (pageviewOn){ %>
+        <%# 浏览量：数字由前端脚本（不蒜子）填进 #busuanzi_value_page_pv。
+            先用「—」占位，保持 meta 行宽稳定；4 秒内没拿到数字就由 JS 整个隐藏。 %>
+        <div class="meta-item" data-pageview>
+          <dt><%= pageviewLabel %></dt>
+          <dd><span id="busuanzi_value_page_pv">—</span><% if (pageviewSiteTotal){ %> <span class="meta-sep">/</span> <span id="busuanzi_value_site_pv">—</span><% } %></dd>
         </div>
       <% } %>
       <% if (categories.length){ %>

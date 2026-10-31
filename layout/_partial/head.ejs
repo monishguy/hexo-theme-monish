@@ -160,6 +160,16 @@ var monoFamily = String(appearance.mono_font || 'JetBrains Mono').replace(/"/g, 
        cdn  ：改用 Google Fonts（国内不稳，仅备选）
        注意 fonts.css 必须排在最前（@font-face 先就位）。 -%>
   <% if (webfont === 'local'){ %>
+    <%#
+      preload：把首屏一定会用到的几个字重提前拉起来，让它们在 fonts.css 解析完
+      之前就进到缓存 —— 配合 fonts.css 里的 font-display: optional，
+      刷新时字体在首绘之前就绪 → 不会出现「先回退字体、再跳成 webfont」。
+      字体请求必须带 crossorigin（即使同源），否则会和 @font-face 发出的请求
+      重复下载两份。
+    %>
+    <% ['archivo-black-400','inter-400','inter-600','jetbrains-mono-400','jetbrains-mono-700'].forEach(function (name){ %>
+      <link rel="preload" as="font" type="font/woff2" crossorigin href="<%- url_for('/fonts/' + name + '.woff2') %>">
+    <% }); %>
     <link rel="stylesheet" href="<%- url_for('/css/fonts.css') %>">
   <% } else if (webfont === 'cdn'){ %>
     <link rel="preconnect" href="https://fonts.googleapis.com">
