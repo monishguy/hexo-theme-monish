@@ -300,6 +300,34 @@ function transformAlerts(html) {
 }
 
 // ---------------------------------------------------------------------------
+// 3.5 <abbr title> → data-tip + aria-label
+// ---------------------------------------------------------------------------
+
+/**
+ * `<abbr title="HyperText Markup Language">HTML</abbr>` 的完整写法默认由浏览器
+ * 原生 tooltip 显示 —— 但原生 tooltip 要悬停 1~2 秒才弹出、样式由系统决定，
+ * 和主题完全不搭，实测看起来就像「普通文字，hover 没反应」。
+ *
+ * 改成：把 title 搬到 data-tip，由 CSS 的 `::after { content: attr(data-tip) }`
+ * 做成主题自己的浮层（零 JS、无延迟）；同时补 aria-label，读屏仍能念出全称。
+ * 去掉 title 是关键 —— 否则原生 tooltip 会和自定义浮层同时出现。
+ */
+function enhanceAbbr(html) {
+  return String(html).replace(/<abbr([^>]*)>([\s\S]*?)<\/abbr>/gi, (whole, attrs, text) => {
+    const match = String(attrs).match(/\stitle="([^"]*)"/i);
+    if (!match) return whole;
+    const tip = match[1];
+    const rest = String(attrs).replace(/\stitle="[^"]*"/i, '');
+    return (
+      '<abbr' + rest +
+      ' data-tip="' + tip + '"' +
+      ' aria-label="' + tip + '"' +
+      '>' + text + '</abbr>'
+    );
+  });
+}
+
+// ---------------------------------------------------------------------------
 // 4. <details> 里的裸文本包成 <p>
 // ---------------------------------------------------------------------------
 
@@ -350,6 +378,6 @@ hexo.extend.filter.register('before_post_render', function (data) {
 
 hexo.extend.filter.register('after_post_render', function (data) {
   if (!data || typeof data.content !== 'string') return data;
-  data.content = normalizeDetails(transformAlerts(data.content));
+  data.content = normalizeDetails(enhanceAbbr(transformAlerts(data.content)));
   return data;
 });

@@ -1,6 +1,6 @@
 {
   "name": "hexo-theme-monish",
-  "version": "2.3.1",
+  "version": "2.3.2",
   "description": "monish —— 纸卡风格的 Hexo 主题：浅灰画布上一张超大圆角白卡，左栏超粗大标题 + 等宽导航，右栏药丸文章列表；自托管 Archivo Black / Inter / JetBrains Mono，浅色·深色·自动三模式；原生 View Transitions 换页过渡、GitHub 评论（giscus / utterances）、零运行时依赖。",
   "license": "MIT",
   "author": "MonishGuy",

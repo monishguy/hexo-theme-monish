@@ -1082,11 +1082,97 @@ html[data-animation="false"] .comments-skeleton-bar {
   white-space: nowrap;
 }
 
-/* 缩写：虚线下划线 + 问号光标，浏览器默认就有 title 浮层 */
-.monish-prose abbr[title] {
-  border-bottom: 1px dashed var(--line);
+/* 缩写：虚线下划线 + 自定义浮层
+   ------------------------------------------------------------------------
+   不用浏览器原生的 title tooltip —— 它要悬停 1~2 秒才出、样式由系统决定、
+   而且虚线一旦用了 --line(#DCDCD8) 在白卡上几乎看不见，看起来就跟普通文字一样。
+   改成纯 CSS 浮层：内容来自 data-tip（构建期由 markdown-extras.js 把 title
+   搬到 data-tip，并保留 aria-label 供读屏），零 JS、无延迟、样式跟主题一致。 */
+.monish-prose abbr[data-tip] {
+  position: relative;
+  border-bottom: 1px dashed var(--text-faint);
   text-decoration: none;
   cursor: help;
+}
+
+.monish-prose abbr[data-tip]::after {
+  content: attr(data-tip);
+  position: absolute;
+  bottom: calc(100% + 9px);
+  left: 50%;
+  z-index: 20;
+  width: max-content;
+  max-width: min(260px, 68vw);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  box-shadow: var(--shadow-pill);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: .875rem;
+  font-weight: 400;
+  line-height: 1.6;
+  text-align: start;
+  white-space: normal;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transform: translate(-50%, 4px);
+  transition:
+    opacity var(--speed-fast) var(--ease-out-expo),
+    transform var(--speed) var(--ease-out-expo),
+    visibility var(--speed-fast) linear;
+}
+
+/* 小三角 */
+.monish-prose abbr[data-tip]::before {
+  content: "";
+  position: absolute;
+  bottom: calc(100% + 5px);
+  left: 50%;
+  z-index: 21;
+  width: 8px;
+  height: 8px;
+  margin-left: -4px;
+  border-right: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+  transform: rotate(45deg) scale(0);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity var(--speed-fast) var(--ease-out-expo), visibility var(--speed-fast) linear;
+}
+
+.monish-prose abbr[data-tip]:hover::after,
+.monish-prose abbr[data-tip]:hover::before,
+.monish-prose abbr[data-tip]:focus::after,
+.monish-prose abbr[data-tip]:focus::before {
+  opacity: 1;
+  visibility: visible;
+}
+
+.monish-prose abbr[data-tip]:hover::after,
+.monish-prose abbr[data-tip]:focus::after {
+  transform: translate(-50%, 0);
+}
+
+.monish-prose abbr[data-tip]:hover::before,
+.monish-prose abbr[data-tip]:focus::before {
+  transform: rotate(45deg) scale(1);
+}
+
+html[data-animation="false"] .monish-prose abbr[data-tip]::after,
+html[data-animation="false"] .monish-prose abbr[data-tip]::before {
+  transition: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .monish-prose abbr[data-tip]::after,
+  .monish-prose abbr[data-tip]::before {
+    transition-duration: .01ms;
+  }
 }
 
 /* 变量（数学/代码里的 x）与样本输出 */

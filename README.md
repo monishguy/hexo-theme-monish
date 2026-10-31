@@ -595,6 +595,8 @@ permalink: :year/:month/:day/:name/
 | **下划线** | `++文字++` 或 `<u>` | |
 | 内联标签 | `<kbd>` `<abbr>` `<var>` `<samp>` `<q>` `<cite>` `<dfn>` `<time>` `<address>` `<small>` `<ins>` `<details>` … | 都有对应样式 |
 
+- **缩写 <abbr>** 不用浏览器原生 tooltip（要悬停 1~2 秒、样式由系统决定），改成主题自己的浮层：
+  虚线下划线 + 即时弹出全称。构建期把 	itle 搬到 data-tip 并补 ria-label，读屏仍念全称。
 > 为什么需要 `scripts/markdown-extras.js`：`hexo-renderer-marked`（marked 15）
 > 不认脚注、不认 `[!NOTE]`、不认 `==高亮==`，而且会把 `[^1]` 当成引用式链接、
 > 把 `H~2~O` 的单波浪线当成删除线。这个脚本在构建期把它们转成正确的 HTML。
