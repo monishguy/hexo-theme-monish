@@ -884,6 +884,36 @@
   }
 
   // -------------------------------------------------------------------------
+  // 脚注悬浮框：靠近边缘时翻转对齐
+  // -------------------------------------------------------------------------
+  /**
+   * 脚注内容由 CSS 在 :hover / :focus-within 时展开，默认是「以角标为中心」。
+   * 角标如果正好落在行尾，居中的浮层会溢出卡片右边缘被裁掉（窄屏尤其明显）。
+   * 这里在展开前量一次浮层的位置，溢出了就加 is-flip-start / is-flip-end
+   * 改成左对齐 / 右对齐 —— 纯 CSS 做不到「量完再决定」，所以留这一小段 JS。
+   */
+  function initFootnotes() {
+    var refs = $$('.monish-prose .fn-ref');
+    if (!refs.length) return;
+
+    var MARGIN = 12;
+
+    function place(ref) {
+      var pop = $('.fn-pop', ref);
+      if (!pop) return;
+      ref.classList.remove('is-flip-start', 'is-flip-end');
+      var rect = pop.getBoundingClientRect();
+      var width = document.documentElement.clientWidth;
+      if (rect.left < MARGIN) ref.classList.add('is-flip-start');
+      else if (rect.right > width - MARGIN) ref.classList.add('is-flip-end');
+    }
+
+    refs.forEach(function (ref) {
+      on(ref, 'mouseenter', function () { place(ref); });
+      on(ref, 'focusin', function () { place(ref); });
+    });
+  }
+  // -------------------------------------------------------------------------
   // 启动
   // -------------------------------------------------------------------------
   // 入场标记：脚本位于 body 末尾，此时 HTML 已解析完，同步加 class 可让
@@ -904,6 +934,7 @@
     initLightbox();
     initSearch();
     initComments();
+    initFootnotes();
     root.classList.add('monish-ready');
   }
 

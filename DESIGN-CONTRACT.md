@@ -630,6 +630,71 @@ color: var(--text-faint);
   111~125 会落在「既没过渡也没入场动画」的窄区间 —— 页面本身完全正常，可接受。
 - `prefers-reduced-motion: reduce` 时 `@view-transition { navigation: none }`，连快照都不做。
 
+### 3.8d 富文本：警示块 / 脚注 / 行内扩展
+
+由 `scripts/markdown-extras.js` 在构建期产出（渲染器 marked 15 不支持这些语法）。
+
+**警示块** —— `> [!NOTE]` 等五型，`after_post_render` 阶段把整个 `<blockquote>` 改写成：
+
+```html
+<div class="md-alert md-alert--note">
+  <p class="md-alert-title">
+    <span class="md-alert-icon fa fa-info-circle" aria-hidden="true"></span>
+    <span class="md-alert-label">Note</span>
+  </p>
+  <div class="md-alert-body"><p>内容</p></div>
+</div>
+```
+
+- 类型：`note` / `tip` / `important` / `warning` / `caution`。
+- 配色变量 `--alert-hue` 只写色相，底色 = `color-mix(--alert-hue 9%, --surface)`、
+  标题色 = `color-mix(--alert-hue 82%, --text)` —— 深浅色**自动适配**，不用两套。
+- 只在「`<blockquote>` 第一个 `<p>` 以 `[!TYPE]` 开头」时改写，普通引用不受影响。
+
+**脚注** —— `before_post_render` 阶段（必须早于渲染，否则 `[^1]` 会被 marked
+当成引用式链接）：
+
+```html
+<sup class="fn-ref" id="fnref-1">
+  <a class="fn-ref-link" href="#fn-1" role="doc-noteref">1</a>
+  <span class="fn-pop" role="doc-endnote" aria-hidden="true">
+    <span class="fn-pop-num">1</span><span class="fn-pop-text">脚注内容</span>
+  </span>
+</sup>
+…
+<section class="footnotes" role="doc-endnotes">
+  <h2 class="footnotes-title">脚注</h2>
+  <ol class="footnotes-list">
+    <li id="fn-1" class="footnote-item">
+      <span class="footnote-num">1.</span>
+      <span class="footnote-text">脚注内容</span>
+      <a class="footnote-backref" href="#fnref-1">↩</a>
+    </li>
+  </ol>
+</section>
+```
+
+- 浮层由 CSS `:hover / :focus-within` 展开，**没有 JS 参与显隐**。
+- `monish.js` 的 `initFootnotes()` 只做一件事：展开前量一次浮层位置，
+  溢出视口就加 `is-flip-start` / `is-flip-end` 改成左/右对齐 ——
+  纯 CSS 无法「量完再决定」，这段 JS 是必要的。
+- 浮层内容做 HTML 转义（避免 `<a>` 套 `<a>`），文末列表允许行内 markdown
+  （经 `hexo.render.renderSync` 处理）。
+
+**行内扩展** —— 同样在 `before_post_render` 换成标准标签：
+
+| 语法 | 产出 |
+| --- | --- |
+| `==高亮==` | `<mark>` |
+| `^上标^` | `<sup>` |
+| `~下标~` | `<sub>`（前后 lookaround 排除 `~~删除线~~`） |
+| `++下划线++` | `<u>` |
+
+> ⚠️ 所有替换都必须走 `mapOutsideCode()`：行内代码与围栏代码块里的示例要原样保留。
+> 文档里就有 `` `==高亮==` `` 这种「把语法当示例写进代码」的用法，不跳过代码段会把它
+> 也渲染成高亮。另外 `^` 的正则**不能跨 `[ ]`**，否则 `[^1] … [^2]` 之间的两个 `^`
+> 会被误判成一对上标。
+
 ### 3.9 状态类汇总（v2）
 
 | class | 加在 | 触发者 |
@@ -826,6 +891,7 @@ if(m!=='auto')e.setAttribute('data-theme',m);else e.setAttribute('data-theme',d)
 | `i18n.js` | 读取语言包 | 按站点 `language` 合并主题语言包 |
 | `generator.js` | `generator` | 产出 `/404.html` |
 | `categories.js` | `before_generate` | 把 `_posts` 下的文件夹名写成文章分类 |
+| `markdown-extras.js` | `before_post_render` + `after_post_render` | 脚注 / GitHub 警示块 / `==高亮==` 等行内扩展（见 §3.8d） |
 
 ### 文件夹 → 分类（`categories.js`）
 
@@ -878,7 +944,7 @@ if(m!=='auto')e.setAttribute('data-theme',m);else e.setAttribute('data-theme',d)
 | 4 | `source/css/hero.css` | `.hero`（仅 `layout: full/center/banner` 用）/ `.hero-bg` / `.hero-overlay` / `.hero-inner` / `.hero-title` / `.hero-subtitle` / `.hero-meta` / `.hero-scroll` / `.hero-particles` / `hero-ready` 入场动画 |
 | 5 | `source/css/post-list.css` | `.post-list` / `.post-row` / `.post-row-date` / `.date-month` / `.date-day` / `.post-pill` / `.post-pill-title` / `.post-pill-excerpt` / `.tag-chip` / `.meta-item` / `.pagination` / `.page-number` / `.extend` / `.empty-state` |
 | 6 | `source/css/page.css` | `.card` / `.card-head` / `.post-date` / `.card-title` / `.card-meta` / `.card-body` / `.card-foot` / `.archive-groups` / `.archive-group*` / `.term-card*` / `.term-index*` / `.tagcloud*` / `.breadcrumb*` / `.btn*` / **404 独立整页 `.error-page` / `.error-home` / `.error-heading` / `.error-code` / `.error-title` / `.error-desc` / `.error-links` / `.error-link`** |
-| 7 | `source/css/post.css` | `.post-toc*` / `.monish-prose` 全量正文排版 / `.highlight` 代码块（`.code-toolbar` / `.code-language` / **`.code-scroll` 横向滚动容器** / 行号槽 `td.gutter`（sticky）/ `--hl-*` 令牌着色）/ `.code-copy` / `.post-copyright` / `.post-nav` / `.comments`  / **评论 `.comments*`（`.comments-title` / `.comments-body` / `.comments-mount` / `.comments-skeleton*`，含 `is-loaded` 态）** |
+| 7 | `source/css/post.css` | `.post-toc*` / `.monish-prose` 全量正文排版 / `.highlight` 代码块（`.code-toolbar` / `.code-language` / **`.code-scroll` 横向滚动容器** / 行号槽 `td.gutter`（sticky）/ `--hl-*` 令牌着色）/ `.code-copy` / `.post-copyright` / `.post-nav` / `.comments` / **富文本 `.md-alert*` / `.footnotes*` / `.fn-ref` / `.fn-pop` / `mark` / `kbd` / `details` / `dl`**  / **评论 `.comments*`（`.comments-title` / `.comments-body` / `.comments-mount` / `.comments-skeleton*`，含 `is-loaded` 态）** |
 | 8 | `source/css/footer.css` | `.site-footer` / `.footer-inner` / `.footer-copyright` / `.footer-powered` / `.footer-theme-name` / `.footer-icp` / `.back-to-top` |
 | 9 | `source/css/extras.css` | `.lightbox*` / `.search-box` / `.search-field` / `.search-input` / `.search-results` / `.search-result-*` / `.search-mask` / `.toast` |
 | 10 | `source/css/responsive.css` | 全部媒体查询：`≤1200px` / `≤900px`（rail 折叠）/ `≤768px` / `≤480px`；抽屉、单列、表格横向滚动、`@media print` |

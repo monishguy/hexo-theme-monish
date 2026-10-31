@@ -1043,3 +1043,488 @@ html[data-animation="false"] .comments-skeleton-bar {
     transition-duration: .01ms;
   }
 }
+
+/* ==========================================================================
+   v2.3 · 富文本补全：<mark> / 内联语义标签 / details / 定义列表 /
+   GitHub 警示块 / 脚注
+   --------------------------------------------------------------------------
+   这一块覆盖 `test02.md` 那类「常用 Markdown + HTML 全效果」文章。
+   markdown 侧不支持的语法（脚注 / [!NOTE] / ==高亮==）由
+   scripts/markdown-extras.js 在构建期转成 HTML，这里只负责样式。
+   ========================================================================== */
+
+/* ---------------------------------------------------------------- 高亮 */
+/* 取主题强调色的淡底 + 深字。字色是 accent-strong 再往 --text 压一档：
+   直接用 #5F8A6C 压在 #EAF1EB 上只有 ≈3.3:1，达不到 AA 小字 4.5:1。 */
+.monish-prose mark {
+  padding: .08em .28em;
+  border-radius: 4px;
+  background: var(--accent-soft);
+  color: color-mix(in srgb, var(--accent-strong) 80%, var(--text));
+  /* 高亮块不打断行内节奏 */
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
+
+/* ------------------------------------------------------------ 内联标签 */
+/* 键盘键：像个实体键帽 */
+.monish-prose kbd {
+  display: inline-block;
+  padding: .12em .42em;
+  border: 1px solid var(--border);
+  border-bottom-width: 2px;
+  border-radius: 5px;
+  background: var(--surface-3);
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: .82em;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+/* 缩写：虚线下划线 + 问号光标，浏览器默认就有 title 浮层 */
+.monish-prose abbr[title] {
+  border-bottom: 1px dashed var(--line);
+  text-decoration: none;
+  cursor: help;
+}
+
+/* 变量（数学/代码里的 x）与样本输出 */
+.monish-prose var {
+  font-family: var(--font-mono);
+  font-style: italic;
+  color: var(--text);
+}
+
+.monish-prose samp {
+  font-family: var(--font-mono);
+  font-size: .9em;
+  color: var(--text-muted);
+}
+
+/* 短引用 / 作品名 / 定义术语 */
+.monish-prose q {
+  quotes: "\201C" "\201D" "\2018" "\2019";
+  color: var(--text);
+}
+
+.monish-prose q::before { content: open-quote; }
+.monish-prose q::after { content: close-quote; }
+
+.monish-prose cite {
+  font-style: italic;
+  color: var(--text-muted);
+}
+
+.monish-prose dfn {
+  font-style: normal;
+  font-weight: 600;
+  border-bottom: 1px dotted var(--line);
+}
+
+/* 地址块：靠左、不斜、行高收紧 */
+.monish-prose address {
+  display: block;
+  margin: 0 0 var(--space-4);
+  padding-inline-start: var(--space-4);
+  border-inline-start: 2px solid var(--line);
+  color: var(--text-muted);
+  font-style: normal;
+  line-height: 1.7;
+}
+
+.monish-prose small {
+  font-size: .85em;
+  color: var(--text-muted);
+}
+
+/* 插入 / 删除（HTML 语义版） */
+.monish-prose ins {
+  text-decoration: underline;
+  text-decoration-color: var(--accent);
+  text-decoration-thickness: 1px;
+  text-underline-offset: .2em;
+}
+
+/* 下划线：细一点、离字远一点，别和链接下划线抢 */
+.monish-prose u {
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: .22em;
+  text-decoration-color: color-mix(in srgb, var(--text) 45%, transparent);
+}
+
+/* 上下标：字号别缩太狠，行高归零避免把行撑开 */
+.monish-prose sup,
+.monish-prose sub {
+  font-size: .72em;
+  line-height: 0;
+  position: relative;
+  vertical-align: baseline;
+}
+
+.monish-prose sup { top: -.5em; }
+.monish-prose sub { bottom: -.28em; }
+
+.monish-prose time {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ------------------------------------------------------- 定义列表 dl */
+.monish-prose dl {
+  margin: 0 0 var(--space-5);
+}
+
+.monish-prose dt {
+  margin-top: var(--space-3);
+  color: var(--text);
+  font-weight: 600;
+}
+
+.monish-prose dt:first-child {
+  margin-top: 0;
+}
+
+.monish-prose dd {
+  margin: var(--space-1) 0 0;
+  padding-inline-start: var(--space-4);
+  border-inline-start: 2px solid var(--line);
+  color: var(--text-muted);
+  line-height: 1.75;
+}
+
+/* ------------------------------------------------- details / summary */
+.monish-prose details {
+  margin: 0 0 var(--space-5);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-3);
+  overflow: hidden;
+}
+
+.monish-prose summary {
+  padding: var(--space-3) var(--space-4);
+  color: var(--text);
+  font-weight: 600;
+  cursor: pointer;
+  /* 去掉默认三角，自己画一个会转的 */
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.monish-prose summary::-webkit-details-marker {
+  display: none;
+}
+
+.monish-prose summary::before {
+  content: "\25B8";
+  color: var(--text-faint);
+  font-size: .9em;
+  transition: transform var(--speed-fast) var(--ease-out-expo);
+}
+
+.monish-prose details[open] summary::before {
+  transform: rotate(90deg);
+}
+
+.monish-prose details > :not(summary) {
+  margin-inline: var(--space-4);
+}
+
+.monish-prose details > :last-child {
+  margin-bottom: var(--space-3);
+}
+
+/* ------------------------------------------------ 任务列表 checkbox */
+/* 有 checkbox 的 ul 不要项目符号（否则「• ☐ 项」） */
+.monish-prose ul:has(> li > input[type="checkbox"]) {
+  list-style: none;
+  padding-inline-start: 0;
+}
+
+.monish-prose li > input[type="checkbox"] {
+  width: 1em;
+  height: 1em;
+  margin-inline-end: .5em;
+  vertical-align: -.12em;
+  accent-color: var(--accent);
+  cursor: default;
+}
+
+.monish-prose li:has(> input[type="checkbox"]:checked) {
+  color: var(--text-muted);
+}
+
+/* ================================================================ 警示块
+   scripts/markdown-extras.js 把 `> [!NOTE]` 改写成的结构：
+   <div class="md-alert md-alert--note">
+     <p class="md-alert-title"><span class="md-alert-icon fa …"></span>Label</p>
+     <div class="md-alert-body">…</div>
+   </div>
+
+   配色策略：保留五种语义色（一眼能区分类型），但压饱和 ——
+   底座/文字都由 --alert-hue 和 --surface / --text 混出来，
+   所以深浅色模式自动适配，不用写两套。 */
+.md-alert {
+  --alert-hue: #5B7FA6;
+  margin: 0 0 var(--space-5);
+  padding: var(--space-4) var(--space-5);
+  border-inline-start: 3px solid var(--alert-hue);
+  border-radius: 0 var(--radius-md) var(--radius-md) 0;
+  background: color-mix(in srgb, var(--alert-hue) 9%, var(--surface));
+  color: var(--text);
+}
+
+.md-alert--note { --alert-hue: #5B7FA6; }      /* 蓝 */
+.md-alert--tip { --alert-hue: #5E8C6E; }       /* 绿 */
+.md-alert--important { --alert-hue: #7A6BA3; } /* 紫 */
+.md-alert--warning { --alert-hue: #A8863F; }   /* 琥珀 */
+.md-alert--caution { --alert-hue: #A85B5B; }   /* 红 */
+
+.md-alert-title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0 0 var(--space-2);
+  color: color-mix(in srgb, var(--alert-hue) 82%, var(--text));
+  font-family: var(--font-body);
+  font-size: var(--fs-label);
+  font-weight: 700;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+
+.md-alert-icon {
+  font-size: 1.05em;
+  line-height: 1;
+}
+
+.md-alert-body > :first-child {
+  margin-top: 0;
+}
+
+.md-alert-body > :last-child {
+  margin-bottom: 0;
+}
+
+/* 警示块里的嵌套引用不要再叠一层绿边框 */
+.md-alert-body blockquote {
+  border-inline-start-color: color-mix(in srgb, var(--alert-hue) 40%, transparent);
+  background: color-mix(in srgb, var(--alert-hue) 5%, var(--surface));
+}
+
+/* ================================================================= 脚注 */
+/* 引用角标：行内小药丸 */
+.monish-prose .fn-ref {
+  position: relative;
+  font-size: inherit;
+  line-height: 0;
+  vertical-align: baseline;
+  top: -.05em;
+}
+
+.monish-prose .fn-ref-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.5em;
+  height: 1.5em;
+  padding: 0 .38em;
+  border-radius: var(--radius-pill);
+  background: var(--accent-soft);
+  color: color-mix(in srgb, var(--accent-strong) 85%, var(--text));
+  font-family: var(--font-mono);
+  font-size: .68em;
+  font-weight: 600;
+  line-height: 1;
+  vertical-align: super;
+  text-decoration: none;
+  transition: background-color var(--speed-fast) var(--ease), color var(--speed-fast) var(--ease);
+}
+
+.monish-prose .fn-ref:hover .fn-ref-link,
+.monish-prose .fn-ref:focus-within .fn-ref-link {
+  background: var(--accent);
+  color: var(--surface);
+}
+
+/* 悬浮展开的脚注内容 */
+.monish-prose .fn-pop {
+  position: absolute;
+  bottom: calc(100% + 10px);
+  left: 50%;
+  z-index: 20;
+  display: flex;
+  gap: var(--space-2);
+  width: max-content;
+  max-width: min(320px, 72vw);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  box-shadow: var(--shadow-pill);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: .875rem;
+  font-weight: 400;
+  line-height: 1.6;
+  text-align: start;
+  white-space: normal;
+  /* 收起态：不可见、不吃事件 */
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translate(-50%, 4px);
+  transition:
+    opacity var(--speed-fast) var(--ease-out-expo),
+    transform var(--speed) var(--ease-out-expo),
+    visibility var(--speed-fast) linear;
+}
+
+/* 小三角 */
+.monish-prose .fn-pop::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  width: 8px;
+  height: 8px;
+  margin-left: -4px;
+  border-right: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+  transform: translateY(-50%) rotate(45deg);
+}
+
+.monish-prose .fn-ref:hover .fn-pop,
+.monish-prose .fn-ref:focus-within .fn-pop {
+  opacity: 1;
+  visibility: visible;
+  transform: translate(-50%, 0);
+}
+
+/* 靠边时由 JS 加这两个类，改成左/右对齐，避免浮层被裁掉 */
+.monish-prose .fn-ref.is-flip-start .fn-pop {
+  left: 0;
+  transform: translate(0, 4px);
+}
+
+.monish-prose .fn-ref.is-flip-start:hover .fn-pop,
+.monish-prose .fn-ref.is-flip-start:focus-within .fn-pop {
+  transform: translate(0, 0);
+}
+
+.monish-prose .fn-ref.is-flip-start .fn-pop::after {
+  left: 1.1em;
+}
+
+.monish-prose .fn-ref.is-flip-end .fn-pop {
+  left: auto;
+  right: 0;
+  transform: translate(0, 4px);
+}
+
+.monish-prose .fn-ref.is-flip-end:hover .fn-pop,
+.monish-prose .fn-ref.is-flip-end:focus-within .fn-pop {
+  transform: translate(0, 0);
+}
+
+.monish-prose .fn-ref.is-flip-end .fn-pop::after {
+  left: auto;
+  right: 1.1em;
+  margin-left: 0;
+}
+
+.monish-prose .fn-pop-num {
+  flex: 0 0 auto;
+  color: color-mix(in srgb, var(--accent-strong) 85%, var(--text));
+  font-family: var(--font-mono);
+  font-size: .8em;
+  font-weight: 600;
+  line-height: 1.9;
+}
+
+.monish-prose .fn-pop-text {
+  min-width: 0;
+}
+
+/* 文末的脚注列表 */
+.monish-prose .footnotes {
+  margin-top: var(--space-7);
+  padding-top: var(--space-5);
+  border-top: 1px solid var(--border);
+}
+
+.monish-prose .footnotes-title {
+  margin: 0 0 var(--space-3);
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: var(--fs-label);
+  font-weight: 500;
+  letter-spacing: var(--ls-label);
+  text-transform: uppercase;
+}
+
+.monish-prose .footnotes-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: footnote;
+  font-size: .9375rem;
+  line-height: 1.75;
+}
+
+.monish-prose .footnote-item {
+  position: relative;
+  display: flex;
+  gap: var(--space-2);
+  padding: var(--space-2) 0;
+  color: var(--text-muted);
+  /* 被锚点跳到时闪一下，方便定位 */
+  scroll-margin-top: calc(var(--nav-height) + var(--space-6));
+}
+
+.monish-prose .footnote-item:target {
+  color: var(--text);
+}
+
+.monish-prose .footnote-num {
+  flex: 0 0 auto;
+  color: color-mix(in srgb, var(--accent-strong) 85%, var(--text));
+  font-family: var(--font-mono);
+  font-size: .8em;
+  font-weight: 600;
+  line-height: 1.95;
+}
+
+.monish-prose .footnote-text {
+  min-width: 0;
+}
+
+.monish-prose .footnote-backref {
+  flex: 0 0 auto;
+  color: var(--text-faint);
+  text-decoration: none;
+  line-height: 1.9;
+}
+
+.monish-prose .footnote-backref:hover {
+  color: var(--accent-strong);
+}
+
+/* 动画关闭 / 降低动效时，浮层直接切换 */
+html[data-animation="false"] .monish-prose .fn-pop {
+  transition: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .monish-prose .fn-pop {
+    transition-duration: .01ms;
+  }
+
+  .monish-prose summary::before {
+    transition: none;
+  }
+}
