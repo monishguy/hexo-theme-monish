@@ -72,3 +72,11 @@ more: More
 skip_to_content: Skip to content
 sidebar: Sidebar
 license_note: Please credit the author and source with a link, licensed under CC BY-NC-SA 4.0
+# v2.3.1 · rich text
+alert_note: Note
+alert_tip: Tip
+alert_important: Important
+alert_warning: Warning
+alert_caution: Caution
+footnotes: Footnotes
+footnote_back: Back to content

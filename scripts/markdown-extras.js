@@ -23,21 +23,31 @@
  * 一个指向「脚注内容」的链接了，回不去。
  */
 
-const ALERT_TYPES = [
-  { key: 'NOTE', cls: 'note', icon: 'fa-info-circle' },
-  { key: 'TIP', cls: 'tip', icon: 'fa-lightbulb-o' },
-  { key: 'IMPORTANT', cls: 'important', icon: 'fa-exclamation-circle' },
-  { key: 'WARNING', cls: 'warning', icon: 'fa-exclamation-triangle' },
-  { key: 'CAUTION', cls: 'caution', icon: 'fa-times-circle-o' }
-];
+const { buildStore } = require('./i18n');
 
-const ALERT_LABEL = {
-  NOTE: 'Note',
-  TIP: 'Tip',
-  IMPORTANT: 'Important',
-  WARNING: 'Warning',
-  CAUTION: 'Caution'
-};
+/* 语言包文案：警示块标题、脚注区标题、回链 aria-label 都要跟着站点 language 走。
+   buildStore 与 helpers.js 用的是同一个（按站点 language 合并主题语言包）。 */
+let i18nStore = null;
+
+function t(key, fallback) {
+  if (!i18nStore) {
+    try {
+      i18nStore = buildStore(hexo);
+    } catch (error) {
+      i18nStore = {};
+    }
+  }
+  const value = i18nStore[key];
+  return typeof value === 'string' && value ? value : fallback;
+}
+
+const ALERT_TYPES = [
+  { key: 'NOTE', cls: 'note', icon: 'fa-info-circle', fallback: 'Note' },
+  { key: 'TIP', cls: 'tip', icon: 'fa-lightbulb-o', fallback: 'Tip' },
+  { key: 'IMPORTANT', cls: 'important', icon: 'fa-exclamation-circle', fallback: 'Important' },
+  { key: 'WARNING', cls: 'warning', icon: 'fa-exclamation-triangle', fallback: 'Warning' },
+  { key: 'CAUTION', cls: 'caution', icon: 'fa-times-circle-o', fallback: 'Caution' }
+];
 
 function escapeHtml(text) {
   return String(text)
@@ -164,14 +174,14 @@ function buildFootnoteSection(order, defs) {
       '<li id="fn-' + num + '" class="footnote-item">' +
       '<span class="footnote-num">' + num + '.</span>' +
       '<span class="footnote-text">' + body + '</span>' +
-      '<a class="footnote-backref" href="#fnref-' + num + '" aria-label="回到正文">\u21a9</a>' +
+      '<a class="footnote-backref" href="#fnref-' + num + '" aria-label="' + escapeHtml(t('footnote_back', '回到正文')) + '">\u21a9</a>' +
       '</li>'
     );
   }).join('\n');
 
   return (
     '\n\n<section class="footnotes" role="doc-endnotes" aria-label="脚注">' +
-    '<h2 class="footnotes-title">脚注</h2>' +
+    '<h2 class="footnotes-title">' + escapeHtml(t('footnotes', '脚注')) + '</h2>' +
     '<ol class="footnotes-list">\n' + items + '\n</ol></section>\n'
   );
 }
@@ -281,12 +291,47 @@ function transformAlerts(html) {
       '<div class="md-alert md-alert--' + type.cls + '">' +
       '<p class="md-alert-title">' +
       '<span class="md-alert-icon fa ' + type.icon + '" aria-hidden="true"></span>' +
-      '<span class="md-alert-label">' + ALERT_LABEL[type.key] + '</span>' +
+      '<span class="md-alert-label">' + t('alert_' + type.cls, type.fallback) + '</span>' +
       '</p>' +
       (body ? '<div class="md-alert-body">' + body + '</div>' : '') +
       '</div>'
     );
   });
+}
+
+// ---------------------------------------------------------------------------
+// 4. <details> 里的裸文本包成 <p>
+// ---------------------------------------------------------------------------
+
+/**
+ * marked 把 `<details>` 当原始 HTML 块整段透传，里面的文字**不会**被包进
+ * `<p>`。于是 CSS 的 `details > :not(summary)` 选不到它（文本节点没有标签），
+ * 展开后的文字会贴着卡片左边缘，和 summary 的文字对不齐。
+ *
+ * 这里把 summary 之后的裸文本包成 <p>，让它和正文其它段落共用同一套
+ * margin / line-height，同时能被 CSS 缩进到与 summary 文字左对齐。
+ *
+ * 已经以块级元素开头的内容原样返回，不重复包裹。
+ */
+function normalizeDetails(html) {
+  return String(html).replace(
+    /<details(\s[^>]*)?>([\s\S]*?)<\/details>/gi,
+    (whole, attrs, inner) => {
+      const split = inner.match(/^([\s\S]*?<\/summary>)([\s\S]*)$/i);
+      if (!split) return whole;
+
+      const head = split[1];
+      const rest = (split[2] || '').trim();
+      if (!rest) return whole;
+
+      // 已经是块级元素开头就不动
+      if (/^<(p|div|ul|ol|pre|blockquote|figure|table|h[1-6]|section|form)\b/i.test(rest)) {
+        return whole;
+      }
+
+      return '<details' + (attrs || '') + '>' + head + '<p>' + rest + '</p></details>';
+    }
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -305,6 +350,6 @@ hexo.extend.filter.register('before_post_render', function (data) {
 
 hexo.extend.filter.register('after_post_render', function (data) {
   if (!data || typeof data.content !== 'string') return data;
-  data.content = transformAlerts(data.content);
+  data.content = normalizeDetails(transformAlerts(data.content));
   return data;
 });

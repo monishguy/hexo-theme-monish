@@ -1202,16 +1202,17 @@ html[data-animation="false"] .comments-skeleton-bar {
   overflow: hidden;
 }
 
+/* 三角改成绝对定位钉在左边：这样 summary 的文字起点只由 padding 决定，
+   展开后的正文也能算出同一个缩进量（见下面的 :not(summary)）。
+   之前三角是 flex 子项，宽度不定，正文没法对齐到文字。 */
 .monish-prose summary {
-  padding: var(--space-3) var(--space-4);
+  position: relative;
+  display: block;
+  padding: var(--space-3) var(--space-4) var(--space-3) calc(var(--space-4) + 1.15em);
   color: var(--text);
   font-weight: 600;
   cursor: pointer;
-  /* 去掉默认三角，自己画一个会转的 */
   list-style: none;
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
 }
 
 .monish-prose summary::-webkit-details-marker {
@@ -1220,8 +1221,13 @@ html[data-animation="false"] .comments-skeleton-bar {
 
 .monish-prose summary::before {
   content: "\25B8";
+  position: absolute;
+  top: 50%;
+  left: var(--space-4);
+  margin-top: -.55em;
   color: var(--text-faint);
   font-size: .9em;
+  line-height: 1.1;
   transition: transform var(--speed-fast) var(--ease-out-expo);
 }
 
@@ -1229,8 +1235,13 @@ html[data-animation="false"] .comments-skeleton-bar {
   transform: rotate(90deg);
 }
 
+/* 展开后的内容与 summary 的**文字**左对齐（而不是与 summary 盒子对齐）：
+   左边距 = summary 的 padding-left，也就是让开三角之后的位置。
+   注意 marked 不会给 <details> 里的裸文本包 <p>，那一步在
+   scripts/markdown-extras.js 的 normalizeDetails() 里做 —— 没有它这条规则
+   选不到文本节点，文字会贴到卡片左边缘。 */
 .monish-prose details > :not(summary) {
-  margin-inline: var(--space-4);
+  margin-inline: calc(var(--space-4) + 1.15em) var(--space-4);
 }
 
 .monish-prose details > :last-child {
@@ -1357,6 +1368,7 @@ html[data-animation="false"] .comments-skeleton-bar {
   left: 50%;
   z-index: 20;
   display: flex;
+  align-items: baseline;
   gap: var(--space-2);
   width: max-content;
   max-width: min(320px, 72vw);
@@ -1443,7 +1455,7 @@ html[data-animation="false"] .comments-skeleton-bar {
   font-family: var(--font-mono);
   font-size: .8em;
   font-weight: 600;
-  line-height: 1.9;
+  line-height: inherit;
 }
 
 .monish-prose .fn-pop-text {
@@ -1479,6 +1491,9 @@ html[data-animation="false"] .comments-skeleton-bar {
 .monish-prose .footnote-item {
   position: relative;
   display: flex;
+  /* 用基线对齐，数字和正文的第一行基线会自然对齐；
+     之前给两边各写死一个 line-height（1.95 / 1.9），字号不同就会差 1~2px。 */
+  align-items: baseline;
   gap: var(--space-2);
   padding: var(--space-2) 0;
   color: var(--text-muted);
@@ -1496,7 +1511,7 @@ html[data-animation="false"] .comments-skeleton-bar {
   font-family: var(--font-mono);
   font-size: .8em;
   font-weight: 600;
-  line-height: 1.95;
+  line-height: inherit;
 }
 
 .monish-prose .footnote-text {
@@ -1507,7 +1522,7 @@ html[data-animation="false"] .comments-skeleton-bar {
   flex: 0 0 auto;
   color: var(--text-faint);
   text-decoration: none;
-  line-height: 1.9;
+  line-height: inherit;
 }
 
 .monish-prose .footnote-backref:hover {

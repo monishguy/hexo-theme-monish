@@ -72,3 +72,11 @@ more: 更多
 skip_to_content: 跳到主要内容
 sidebar: 侧栏
 license_note: 转载请注明作者与出处，遵循 CC BY-NC-SA 4.0 协议
+# v2.3.1 · 富文本
+alert_note: 注意
+alert_tip: 提示
+alert_important: 重要
+alert_warning: 警告
+alert_caution: 危险
+footnotes: 脚注
+footnote_back: 回到正文

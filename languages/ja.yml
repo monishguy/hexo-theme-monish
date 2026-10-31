@@ -72,3 +72,11 @@ more: もっと見る
 skip_to_content: 本文へスキップ
 sidebar: サイドバー
 license_note: 転載時は著者と出典を明記し、CC BY-NC-SA 4.0 に従ってください
+# v2.3.1 · リッチテキスト
+alert_note: 注記
+alert_tip: ヒント
+alert_important: 重要
+alert_warning: 警告
+alert_caution: 危険
+footnotes: 脚注
+footnote_back: 本文に戻る

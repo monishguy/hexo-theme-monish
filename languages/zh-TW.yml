@@ -72,3 +72,11 @@ more: 更多
 skip_to_content: 跳至主要內容
 sidebar: 側欄
 license_note: 轉載請註明作者與出處，並遵循 CC BY-NC-SA 4.0 授權條款
+# v2.3.1 · 富文本
+alert_note: 注意
+alert_tip: 提示
+alert_important: 重要
+alert_warning: 警告
+alert_caution: 危險
+footnotes: 腳注
+footnote_back: 回到內文

@@ -781,7 +781,7 @@ CSS 不依赖图标，图标由模板写死。配置里的 `links` 键 → 图�
 ## 6. i18n 键（`languages/*.yml`）
 
 模板只允许出现以下 `__()` 键（至少 `zh-CN`、`en`、`zh-TW`、`ja` 四份；其余语言缺失时 Hexo 回退 default）。
-**v1.3（共 61 键，四份语言包键集合必须与此完全一致）**。
+**v1.3（共 68 键，四份语言包键集合必须与此完全一致）**。
 
 ```
 home  archives  categories  category  tags  tag  about  friends
@@ -794,6 +794,7 @@ menu  close  expand  copied  copy  not_found  not_found_desc  back_home
 page  pages  total_posts  site_running  topics  author  copyright  published
 prev_page  next_page  more
 skip_to_content  sidebar  license_note
+alert_note  alert_tip  alert_important  alert_warning  alert_caution  footnotes  footnote_back
 ```
 
 > v1.1 变更（Lead 通知）：新增 `no_posts` / `rss` / `pages` / `topics`；
