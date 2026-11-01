@@ -929,7 +929,7 @@
     var provider = root.getAttribute('data-pv') || '';
     if (!provider || provider === 'none') return;
 
-    var items = $$('.meta-item[data-pageview]');
+    var items = $$('.meta-item[data-pageview], [data-pageview-site]');
     if (!items.length) return;
 
     var SOURCE = {

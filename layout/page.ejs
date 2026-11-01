@@ -55,6 +55,34 @@ var hasToc = page.toc && cfg.post.toc && /<h[1-6][^>]*id=/i.test(page.content ||
     </div>
 
     <%#
+      关于页的全站访问统计（pageview.about_total，默认开）。
+      —— 只**追加**在正文之后，页面里你自己写的任何内容都不受影响。
+      识别方式：路径以 about 开头（/about/、/about/index.html），
+      或者在这页 front-matter 写 `pageview_site: true`（给想放别处的自定义页用）。
+      数字由第三方计数服务填进 #busuanzi_value_site_pv / site_uv（两家都认这个 id）；
+      服务不可达时 JS 会把整块隐藏（见 initPageview）。
+    %>
+    <%
+    var pvCfg = cfg.pageview || {};
+    var wantSiteStats = pvCfg.enable !== false &&
+      String(pvCfg.provider || 'vercount').toLowerCase() !== 'none' &&
+      pvCfg.about_total !== false &&
+      (page.pageview_site === true || /^about(\/|$)/.test(pagePath));
+    %>
+    <% if (wantSiteStats){ %>
+      <aside class="page-stats" data-pageview-site aria-label="<%= monish_t('site_stats') %>">
+        <div class="page-stats-item">
+          <span class="page-stats-label"><%= monish_t('site_visits') %></span>
+          <span class="page-stats-value" id="busuanzi_value_site_pv">—</span>
+        </div>
+        <div class="page-stats-item">
+          <span class="page-stats-label"><%= monish_t('site_visitors') %></span>
+          <span class="page-stats-value" id="busuanzi_value_site_uv">—</span>
+        </div>
+      </aside>
+    <% } %>
+
+    <%#
       独立页默认不显示评论（配置键本来就叫 post.comments）。
       想在某一页开评论，在它的 front-matter 里写 `comments: true`。
 

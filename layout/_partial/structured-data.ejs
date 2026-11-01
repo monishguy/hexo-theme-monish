@@ -1,0 +1,60 @@
+<%
+/**
+ * 结构化数据（JSON-LD）—— SEO 任务 1 / 2。
+ *
+ *   首页   → WebSite
+ *   文章页 → BlogPosting，其 isPartOf 指向同一个 WebSite 的 @id
+ *
+ * 只在对应页面输出，避免全站冗余脚本。
+ *
+ * 序列化**必须**走 monish_jsonld()（scripts/helpers.js）：
+ * 它会把 < > & 转成 \u003c 这类转义。直接用 JSON.stringify 的话，
+ * 标题里只要出现 `</script>` 就会提前闭合脚本标签，整段 JSON-LD 被截断；
+ * 引号、反斜杠本身则由 JSON.stringify 处理，不会破结构。
+ */
+var seo = cfg.seo || {};
+if (seo.structured_data !== false) {
+  var siteUrl = String(config.url || '').replace(/\/+$/, '');
+  var siteName = cfg.site.title || config.title || '';
+  var siteDesc = cfg.site.description || config.description || '';
+  var siteLang = config.language || 'zh-CN';
+  var websiteId = siteUrl + '/#website';
+  var homePage = (typeof is_home_first_page === 'function' ? is_home_first_page() : is_home());
+%>
+<% if (homePage){ %>
+  <script type="application/ld+json"><%- monish_jsonld({
+    '@context': 'https://schema.org',
+    '@type': 'WebSite',
+    '@id': websiteId,
+    'url': siteUrl,
+    'name': siteName,
+    'description': siteDesc
+  }) %></script>
+<% } %>
+<% if (is_post()){ %>
+  <%
+  var postedAt = page.date ? date_xml(page.date) : '';
+  var updatedAt = page.updated ? date_xml(page.updated) : postedAt;
+  var postUrl = page.permalink ? url_for(page.permalink) : siteUrl + '/';
+  var postAuthor = page.author || cfg.site.author || siteName;
+  var postImage = monish_first_image(page.content);
+  var post = {
+    '@context': 'https://schema.org',
+    '@type': 'BlogPosting',
+    'mainEntityOfPage': { '@type': 'WebPage', '@id': postUrl },
+    'headline': page.title || '',
+    'description': monish_plain_text(page.description || page.excerpt || page.content || '', 150),
+    'datePublished': postedAt,
+    'dateModified': updatedAt,
+    'author': { '@type': 'Person', 'name': postAuthor },
+    'publisher': { '@type': 'Organization', 'name': siteName },
+    'url': postUrl,
+    'inLanguage': siteLang,
+    'isPartOf': { '@type': 'WebSite', '@id': websiteId }
+  };
+  /* 有封面图才加 image —— 空字符串反而会被 Bing 判成坏字段 */
+  if (postImage){ post.image = postImage; }
+  %>
+  <script type="application/ld+json"><%- monish_jsonld(post) %></script>
+<% } %>
+<% } %>

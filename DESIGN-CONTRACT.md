@@ -171,6 +171,16 @@ pageview:
   provider: vercount       # vercount（默认，稳定）| busuanzi | none
   label:                   # 留空用语言包 pageview（阅读 / Views / 閱讀 / 閲覧）
   site_total: false        # true = 额外显示整站总浏览量
+  about_total: true        # 关于页底部显示「全站总访问 / 访客数」
+
+# SEO（结构化数据 / 描述 / sitemap）
+seo:
+  structured_data: true    # 首页 WebSite + 文章页 BlogPosting JSON-LD（见 §3.8e）
+  description_length: 150  # meta description 截断长度，建议 120~160
+  sitemap: true            # 产出 /sitemap.xml 并输出 <link rel="sitemap">
+
+# 必应站长工具验证码（<meta name="msvalidate.01"> 的 content）；留空不输出
+bing_site_verification:
 
 # 第三方
 analytics:
@@ -737,6 +747,58 @@ color: var(--text-faint);
 > 也渲染成高亮。另外 `^` 的正则**不能跨 `[ ]`**，否则 `[^1] … [^2]` 之间的两个 `^`
 > 会被误判成一对上标。
 
+### 3.8e SEO 输出（JSON-LD / description / sitemap）
+
+对应 `_config.yml` 的 `seo:` 段与 `bing_site_verification:`。
+
+**结构化数据** —— `layout/_partial/structured-data.ejs`，由 `head.ejs` 引入：
+
+| 页面 | 输出 | 关键约定 |
+| --- | --- | --- |
+| 首页（`is_home()` 且为第一页） | `WebSite` | `@id` = `{config.url}/#website` |
+| 文章页（`is_post()`） | `BlogPosting` | `isPartOf` 指向上面的 `@id` |
+| 其余 | 不输出 | — |
+
+四条硬约定：
+
+1. **序列化必须走 `monish_jsonld()`**（`scripts/helpers.js`）。它把 `<` `>` `&`
+   转成 `\u003c` / `\u003e` / `\u0026`：`JSON.stringify` 本身能处理引号和反斜杠，
+   但**不会**处理 `<`，标题里一旦出现 `</script>` 就会提前闭合脚本标签，
+   整段 JSON-LD 被截断（HTML 注释符 `<!--` 同理）。
+2. **`BlogPosting.headline` 必须与页面 `<h1>`、`<title>` 开头一致** —— 这是
+   Bing 判断内容相关性的基础信号。所以 headline 直接取 `page.title`，不要加工。
+3. `description` 字段同样过 `monish_plain_text()`：JSON-LD 里不能出现 HTML 实体。
+4. `image` 只在能取到封面时才写。空字符串会被判定成坏字段。
+
+**meta description** —— 只输出**一份**：`head.ejs` 计算好后传给 Hexo 的
+`open_graph()`，由它统一输出 `<meta name="description">` / `og:description` /
+`twitter:description`。**不要**在模板里另写一份 `<meta name="description">` ——
+重复标签会让搜索引擎自己挑一个，反而不可控。
+
+兜底顺序（保证同页唯一、不空、不复用首页文案）：
+
+| 页面 | 顺序 |
+| --- | --- |
+| 文章 | `page.description` → 正文纯文本（截到 `seo.description_length`） |
+| 独立页 | `page.description` → 正文纯文本 |
+| 归档 | 「站点名的归档页面」（年/月归档带时间） |
+| 分类 / 标签归档 | 「站点名「X」分类页面」 |
+| `/categories/`、`/tags/` 索引 | 按 `page.path` 判断（它们是普通 Page，`is_category()` 为 false） |
+| 首页 | 站点描述 |
+
+**sitemap** —— `scripts/generator.js` 的 `monish_sitemap`：
+
+- 产出 `/sitemap.xml`（文章 + 独立页 + 归档/分类/标签索引 + 首页）；
+- `<loc>` 必须做**百分号编码**：Hexo 的 `post.path` 是未编码原文
+  （`2026/09/26/应用发布/禁用摇一摇/`），不编码会被搜索引擎当成坏 URL 丢弃；
+- 检测到 `hexo.config.sitemap`（即装了 `hexo-generator-sitemap`）就**不生成**，
+  避免两条路由抢同一个文件；
+- `<link rel="sitemap">` 只在 `seo.sitemap !== false` 时输出。
+
+**Bing 兼容性**（写进 README，给使用者解释预期）：Bing 对 schema.org 的原生
+富媒体支持重点在 Offer / Product，`WebSite` / `BlogPosting` 是**辅助信号**，
+不是 Sitelinks 的开关；Sitelinks 由算法生成，能做的只是把基础打对。
+
 ### 3.9 状态类汇总（v2）
 
 | class | 加在 | 触发者 |
@@ -852,7 +914,7 @@ CSS 不依赖图标，图标由模板写死。配置里的 `links` 键 → 图�
 ## 6. i18n 键（`languages/*.yml`）
 
 模板只允许出现以下 `__()` 键（至少 `zh-CN`、`en`、`zh-TW`、`ja` 四份；其余语言缺失时 Hexo 回退 default）。
-**v1.3（共 69 键，四份语言包键集合必须与此完全一致）**。
+**v1.3（共 72 键，四份语言包键集合必须与此完全一致）**。
 
 ```
 home  archives  categories  category  tags  tag  about  friends
@@ -867,6 +929,7 @@ prev_page  next_page  more
 skip_to_content  sidebar  license_note
 alert_note  alert_tip  alert_important  alert_warning  alert_caution  footnotes  footnote_back
 pageview
+site_stats  site_visits  site_visitors
 ```
 
 > v1.1 变更（Lead 通知）：新增 `no_posts` / `rss` / `pages` / `topics`；
@@ -1019,7 +1082,7 @@ if(m!=='auto')e.setAttribute('data-theme',m);else e.setAttribute('data-theme',d)
 | 3 | `source/css/shell.css` | **v2 新增**：`.shell`（大圆角白卡）/ `.rail` / `.rail-top` / `.rail-slogan` / `.rail-author` / `.author-avatar` / `.author-name` / `.rail-bottom` / `.rail-nav` / `.rail-link` / `.rail-utils` / `.util-btn` / `.main`（含左侧竖分隔线）/ `.scroll-track` / `.scroll-thumb` / `.skip-link` / 移动顶栏与 `.nav-backdrop` / `.nav-drawer` / `.drawer-link` |
 | 4 | `source/css/hero.css` | `.hero`（仅 `layout: full/center/banner` 用）/ `.hero-bg` / `.hero-overlay` / `.hero-inner` / `.hero-title` / `.hero-subtitle` / `.hero-meta` / `.hero-scroll` / `.hero-particles` / `hero-ready` 入场动画 |
 | 5 | `source/css/post-list.css` | `.post-list` / `.post-row` / `.post-row-date` / `.date-month` / `.date-day` / `.post-pill` / `.post-pill-title` / `.post-pill-excerpt` / `.tag-chip` / `.meta-item` / `.pagination` / `.page-number` / `.extend` / `.empty-state` |
-| 6 | `source/css/page.css` | `.card` / `.card-head` / `.post-date` / `.card-title` / `.card-meta` / `.card-body` / `.card-foot` / `.archive-groups` / `.archive-group*` / `.term-card*` / `.term-index*` / `.tagcloud*` / `.breadcrumb*` / `.btn*` / **404 独立整页 `.error-page` / `.error-home` / `.error-heading` / `.error-code` / `.error-title` / `.error-desc` / `.error-links` / `.error-link`** |
+| 6 | `source/css/page.css` | `.card` / `.card-head` / `.post-date` / `.card-title` / `.card-meta` / `.card-body` / `.card-foot` / `.archive-groups` / `.archive-group*` / `.term-card*` / `.term-index*` / `.tagcloud*` / `.breadcrumb*` / `.btn*` / **404 独立整页 `.error-page` / `.error-home` / `.error-heading` / `.error-code` / `.error-title` / `.error-desc` / `.error-links` / `.error-link`** / **关于页统计 `.page-stats*`（`.page-stats` / `.page-stats-item` / `.page-stats-label` / `.page-stats-value`）** |
 | 7 | `source/css/post.css` | `.post-toc*` / `.monish-prose` 全量正文排版 / `.highlight` 代码块（`.code-toolbar` / `.code-language` / **`.code-scroll` 横向滚动容器** / 行号槽 `td.gutter`（sticky）/ `--hl-*` 令牌着色）/ `.code-copy` / `.post-copyright` / `.post-nav` / `.comments` / **富文本 `.md-alert*` / `.footnotes*` / `.fn-ref` / `.fn-pop` / `mark` / `kbd` / `details` / `dl`**  / **评论 `.comments*`（`.comments-title` / `.comments-body` / `.comments-mount` / `.comments-skeleton*`，含 `is-loaded` 态）** |
 | 8 | `source/css/footer.css` | `.site-footer` / `.footer-inner` / `.footer-copyright` / `.footer-powered` / `.footer-theme-name` / `.footer-icp` / `.back-to-top` |
 | 9 | `source/css/extras.css` | `.lightbox*` / `.search-box` / `.search-field` / `.search-input` / `.search-results` / `.search-result-*` / `.search-mask` / `.toast` |

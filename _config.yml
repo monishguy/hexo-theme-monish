@@ -108,6 +108,10 @@ pageview:
   label:
   site_total: false
 
+  # 关于页（path 以 about 开头，或 front-matter 写 pageview_site: true）底部
+  # 显示「全站总访问 / 总访客」。不影响页面里你自己写的任何内容。
+  about_total: true
+
 # ---------------------------------------------------------------------------
 # 作者 —— 左栏那块「虚线圆圈头像 + 名字」
 # ---------------------------------------------------------------------------
@@ -296,3 +300,26 @@ analytics:
 # 站点图标：留空则不输出 <link rel="shortcut icon">（避免指向不存在的文件）
 # 想启用就把图标放到站点 source/ 下，例如 /favicon.png
 favicon: /webpics/webpic.png
+
+# ---------------------------------------------------------------------------
+# SEO：结构化数据 / 页面描述 / sitemap
+# ---------------------------------------------------------------------------
+seo:
+  # 首页输出 WebSite、文章页输出 BlogPosting 的 JSON-LD。
+  # 作用：让 Bing / Google 正确识别「站点是什么」「这篇文章属于哪个站点」，
+  # 也是 AI 摘要做 grounding 的常用信号。
+  structured_data: true
+
+  # <meta name="description"> 的截断长度。建议 120~160。
+  description_length: 150
+
+  # 生成 /sitemap.xml 并输出 <link rel="sitemap">。
+  # 主题自带一个零依赖的 sitemap 生成器；如果你另装了 hexo-generator-sitemap，
+  # 主题会自动让位（不重复生成），链接依然有效。
+  sitemap: true
+
+# 必应站长工具（Bing Webmaster Tools）验证码：
+# 把 https://www.bing.com/webmasters 里拿到的 content 值填在这里，
+# 会输出 <meta name="msvalidate.01" content="...">。留空则不输出。
+bing_site_verification:
+

@@ -28,7 +28,18 @@ var bodyClass = ['monish', isHomeFirst ? 'is-home' : 'is-page'];
    （等 window load 之后再插，避免第三方接口慢/挂掉时把 load 事件拖住）。 */
 var pv = cfg.pageview || {};
 var pvProvider = String(pv.provider || 'vercount').toLowerCase();
-var pvOn = pv.enable !== false && pvProvider !== 'none' && is_post() && page.pageview !== false;
+/* 「关于页全站统计」也依赖同一个计数脚本，所以这里要一起算 */
+var pvPagePath = String(page.path || '').replace(/^\/+/, '');
+var pvSiteStats = pvEnabled() && pv.about_total !== false &&
+  (page.pageview_site === true || /^about(\/|$)/.test(pvPagePath));
+var pvOn = false;
+if (pvEnabled()) {
+  if (is_post()) pvOn = page.pageview !== false;
+  else pvOn = pvSiteStats;
+}
+function pvEnabled() {
+  return pv.enable !== false && pvProvider !== 'none';
+}
 %>
 <!DOCTYPE html>
 <html lang="<%= config.language || 'zh-CN' %>" data-theme-mode="auto" data-root="<%- url_for('/') %>"

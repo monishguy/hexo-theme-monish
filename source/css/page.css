@@ -577,3 +577,41 @@
   gap: var(--space-3);
   margin-top: var(--space-6);
 }
+
+/* ---------------------------------------------------------- 关于页统计 */
+/* 追加在正文之后，不动页面里作者自己写的任何内容。
+   数字由第三方计数服务填；服务不可达时 JS 会整块加 .is-hidden。 */
+.page-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-6);
+  margin-top: var(--space-7);
+  padding-top: var(--space-5);
+  border-top: 1px solid var(--border);
+}
+
+.page-stats-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.page-stats-label {
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: var(--fs-label);
+  letter-spacing: var(--ls-label);
+}
+
+.page-stats-value {
+  color: var(--text);
+  font-family: var(--font-display);
+  font-size: 1.35rem;
+  font-weight: 400;
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+}
+
+.page-stats.is-hidden {
+  display: none;
+}

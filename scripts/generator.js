@@ -36,3 +36,120 @@ hexo.extend.generator.register('monish_404', function monish404() {
     }
   };
 });
+
+/**
+ * 生成 /sitemap.xml。
+ *
+ * 为什么主题自己生成而不是要求装 hexo-generator-sitemap：
+ *   · 那是一个**构建期插件**，装它要改使用者站点的 package.json；
+ *   · 而 sitemap 的规则很稳定（文章 + 独立页 + 归档/分类/标签索引），
+ *     三十行就能覆盖，还跟主题的路由规则天然一致。
+ *
+ * 装了官方插件时让位：
+ *   hexo-generator-sitemap 会把配置挂到 hexo.config.sitemap 上，
+ *   检测到就直接返回，避免两条路由抢同一个 /sitemap.xml。
+ */
+
+function xmlEscape(value) {
+  return String(value === undefined || value === null ? '' : value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;');
+}
+
+/**
+ * sitemap 里的 <loc> 必须是**合法的 URI**：中文、空格、`#`、`?` 都要百分号编码，
+ * 否则 Bing / Google 会当成坏 URL 丢掉（Hexo 的 post.path 是未编码的原文，
+ * 例如 `2026/09/26/应用发布/禁用摇一摇/`）。
+ * 只编码路径段，保留分隔用的 `/`。
+ */
+function encodePath(path) {
+  return String(path || '')
+    .split('/')
+    .map((segment) => (segment ? encodeURIComponent(segment) : segment))
+    .join('/');
+}
+
+function absoluteUrl(config, path) {
+  const root = String(config.url || '').replace(/\/+$/, '');
+  const clean = encodePath(String(path || '').replace(/^\/+/, ''));
+  if (!root) return '/' + clean;
+  return root + '/' + clean;
+}
+
+function isoDate(value) {
+  if (!value) return '';
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  return date.toISOString().replace(/\.\d{3}Z$/, 'Z');
+}
+
+hexo.extend.generator.register('monish_sitemap', function monishSitemap(locals) {
+  const themeConfig = (hexo.theme && hexo.theme.config) || {};
+  const seo = themeConfig.seo || {};
+
+  if (seo.sitemap === false) return;
+  // 官方插件已经接管，主题不要再抢同名路由
+  if (hexo.config && hexo.config.sitemap) return;
+
+  const config = hexo.config || {};
+  const entries = [];
+  const seen = new Set();
+
+  const push = (path, lastmod, changefreq, priority) => {
+    const url = absoluteUrl(config, path);
+    if (seen.has(url)) return;
+    seen.add(url);
+    entries.push({ url, lastmod: isoDate(lastmod), changefreq, priority });
+  };
+
+  // 首页
+  push('', locals.posts && locals.posts.length ? locals.posts.first().date : new Date(), 'daily', '1.0');
+
+  // 文章
+  (locals.posts ? locals.posts.toArray() : []).forEach((post) => {
+    if (!post || post.published === false) return;
+    push(post.path, post.updated || post.date, 'monthly', '0.8');
+  });
+
+  // 独立页
+  (locals.pages ? locals.pages.toArray() : []).forEach((item) => {
+    if (!item || !item.path) return;
+    push(item.path, item.updated || item.date, 'monthly', '0.6');
+  });
+
+  // 归档 / 分类 / 标签索引（有才加）
+  const addIndex = (routePath, lastmod, priority) => {
+    if (!routePath) return;
+    push(routePath, lastmod, 'weekly', priority);
+  };
+  addIndex('archives/', locals.posts && locals.posts.length ? locals.posts.first().date : null, '0.5');
+  addIndex('categories/', null, '0.4');
+  addIndex('tags/', null, '0.4');
+
+  if (!entries.length) return;
+
+  const body = entries
+    .map((item) => {
+      const parts = ['<url><loc>' + xmlEscape(item.url) + '</loc>'];
+      if (item.lastmod) parts.push('<lastmod>' + item.lastmod + '</lastmod>');
+      if (item.changefreq) parts.push('<changefreq>' + item.changefreq + '</changefreq>');
+      if (item.priority) parts.push('<priority>' + item.priority + '</priority>');
+      parts.push('</url>');
+      return parts.join('');
+    })
+    .join('\n  ');
+
+  const xml =
+    '<?xml version="1.0" encoding="UTF-8"?>\n' +
+    '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n  ' +
+    body +
+    '\n</urlset>\n';
+
+  return {
+    path: 'sitemap.xml',
+    data: xml
+  };
+});

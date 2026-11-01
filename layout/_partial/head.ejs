@@ -19,7 +19,65 @@ if (is_archive()) {
   pageTitle = monish_t('tag') + ': ' + page.tag;
 }
 
-var metaDescription = page.description || (is_post() ? strip_html(page.excerpt || page.content || '').slice(0, 200) : cfg.site.description) || cfg.site.description;
+/**
+ * <meta name="description">：同一页永远唯一、不空、也不复用首页文案。
+ *
+ * 优先级（SEO 任务 3）：
+ *   1. 页面 / 文章 front-matter 的 description
+ *   2. 文章：正文纯文本；独立页（关于 / 友链 …）：正文纯文本
+ *   3. 按页面类型生成兜底：「捣蒜小站的归档页面」「…的分类页面」
+ *   4. 站点描述
+ *
+ * 一律经 monish_plain_text() 处理：去掉标签、HTML 实体（marked 会把 / 转成
+ * &#x2F;）、markdown 记号，只留人眼能看到的文字。
+ */
+var seo = cfg.seo || {};
+var descriptionLength = Number(seo.description_length) || 150;
+var siteName = cfg.site.title || config.title || '';
+
+function clipText(text) {
+  var value = String(text || '').trim();
+  if (!value) return '';
+  var chars = Array.from(value);
+  return chars.length > descriptionLength
+    ? chars.slice(0, descriptionLength).join('').trim() + '…'
+    : value;
+}
+
+var metaDescription = clipText(page.description);
+
+if (!metaDescription && is_post()) {
+  metaDescription = clipText(monish_plain_text(page.excerpt || page.content || '', 0));
+}
+if (!metaDescription && !is_post() && !is_home() && page.content) {
+  metaDescription = clipText(monish_plain_text(page.content, 0));
+}
+if (!metaDescription && is_archive()) {
+  var archiveHint = '';
+  if (is_month()) archiveHint = ' ' + page.year + '/' + page.month;
+  else if (is_year()) archiveHint = ' ' + page.year;
+  metaDescription = clipText(siteName + archiveHint + '的' + monish_t('archives') + '页面');
+}
+if (!metaDescription && is_category()) {
+  metaDescription = clipText(siteName + (page.category ? '「' + page.category + '」' : '') + monish_t('category') + '页面');
+}
+if (!metaDescription && is_tag()) {
+  metaDescription = clipText(siteName + (page.tag ? '「' + page.tag + '」' : '') + monish_t('tag') + '页面');
+}
+/* /categories/、/tags/ 这类「索引页」其实是被 page 布局渲染的普通 Page，
+   is_category() / is_tag() 都是 false。按路径单独给描述，比「分类 - 站点名」准确。 */
+if (!metaDescription) {
+  var indexPath = String(page.path || '').replace(/^\/+/, '');
+  if (/^categories(\/|$)/.test(indexPath)) metaDescription = clipText(siteName + '的' + monish_t('categories') + '页面');
+  else if (/^tags(\/|$)/.test(indexPath)) metaDescription = clipText(siteName + '的' + monish_t('tags') + '页面');
+}if (!metaDescription && page.title && !is_home()) {
+  metaDescription = clipText(page.title + ' - ' + siteName);
+}
+if (!metaDescription) {
+  metaDescription = clipText(cfg.site.description || config.description || '');
+}
+
+
 var metaKeywords = cfg.site.keywords || '';
 if (page.tags && page.tags.length) {
   metaKeywords = page.tags.toArray().map(function (t) { return t.name; }).join(',');
@@ -62,12 +120,12 @@ var monoFamily = String(appearance.mono_font || 'JetBrains Mono').replace(/"/g, 
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title><% if (pageTitle){ %><%= pageTitle %> | <% } %><%= cfg.site.title %></title>
-  <% if (metaDescription){ %>
-    <meta name="description" content="<%= escape_html(metaDescription) %>">
-  <% } %>
-  <% if (metaKeywords){ %>
-    <meta name="keywords" content="<%= escape_html(metaKeywords) %>">
-  <% } %>
+  <%#
+    注意：<meta name="description"> 与 <meta name="keywords"> **不在这里输出**。
+    Hexo 的 open_graph() 已经会输出它们（见下方调用，description 就是这里算好的
+    metaDescription），在这里再写一份会导致每页有两个 description ——
+    SEO 要求唯一，重复标签会让搜索引擎自己挑一个，反而不可控。
+  %>
   <% if (cfg.site.author){ %>
     <meta name="author" content="<%= escape_html(cfg.site.author) %>">
   <% } %>
@@ -90,6 +148,19 @@ var monoFamily = String(appearance.mono_font || 'JetBrains Mono').replace(/"/g, 
   <% if (cfg.favicon){ %>
     <%- favicon_tag(cfg.favicon) %>
   <% } %>
+
+  <%# ---- SEO 任务 4：Bing 站长工具验证码（留空不输出） ---- %>
+  <% var bingVerification = String(seo.bing_site_verification || (cfg.raw && cfg.raw.bing_site_verification) || '').trim(); %>
+  <% if (bingVerification){ %>
+    <meta name="msvalidate.01" content="<%= escape_html(bingVerification) %>">
+  <% } %>
+  <%# ---- sitemap 声明：仅当主题或插件确实会生成 sitemap.xml 时输出，避免指向 404 ---- %>
+  <% if (seo.sitemap !== false){ %>
+    <link rel="sitemap" type="application/xml" title="Sitemap" href="<%- url_for('/sitemap.xml') %>">
+  <% } %>
+
+  <%# ---- SEO 任务 1 / 2：结构化数据（首页 WebSite、文章页 BlogPosting） ---- %>
+  <%- partial('_partial/structured-data', { cfg: cfg }) %>
 
   <%# ---- 防 FOUC：必须在样式表与其它脚本之前执行 ---- %>
   <script>

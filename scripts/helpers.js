@@ -66,34 +66,97 @@ function escapeHtml(value) {
     .replace(/"/g, '&quot;');
 }
 
-/** 去掉 html 标签与 markdown 标记，得到纯文本 */
+/* 常见命名实体。只收正文里真会出现的那些，避免拖进一张巨大的表。 */
+const NAMED_ENTITIES = {
+  amp: '&', lt: '<', gt: '>', quot: '"', apos: "'",
+  nbsp: ' ', ensp: ' ', emsp: ' ', thinsp: ' ',
+  hellip: '…', mdash: '—', ndash: '–', middot: '·', bull: '•',
+  lsquo: '‘', rsquo: '’', ldquo: '“', rdquo: '”', laquo: '«', raquo: '»',
+  copy: '©', reg: '®', trade: '™', deg: '°', plusmn: '±',
+  times: '×', divide: '÷', frac12: '½', frac14: '¼', frac34: '¾',
+  larr: '←', rarr: '→', uarr: '↑', darr: '↓', harr: '↔',
+  le: '≤', ge: '≥', ne: '≠', asymp: '≈', infin: '∞'
+};
+
+function codePointChar(code, fallback) {
+  if (!Number.isFinite(code) || code < 0 || code > 0x10ffff) return fallback;
+  if (code >= 0xd800 && code <= 0xdfff) return fallback; // 代理区不能单独出现
+  try {
+    return String.fromCodePoint(code);
+  } catch (error) {
+    return fallback;
+  }
+}
+
+/**
+ * 解码 HTML 实体。
+ *
+ * 为什么必须有：marked 会把 `/` 转义成 `&#x2F;`、`=` 转成 `&#x3D;`。
+ * 摘要是给人读的，不能把这些编码原样丢出来。
+ *
+ * ⚠️ 顺序很重要 —— 必须在「去掉 markdown 记号」之前解码。
+ * 以前是反过来的：先用 `.replace(/[`*_~>#]/g,'')` 删掉 `#`，
+ * 于是 `&#x2F;` 被削成 `&x2F;`，再被模板二次转义成 `&amp;x2F;`，
+ * 摘要里就出现了 `&amp;x2F;` 这种东西。
+ */
+function decodeEntities(text) {
+  return String(text || '')
+    .replace(/&#x([0-9a-f]+);?/gi, function (whole, hex) {
+      return codePointChar(parseInt(hex, 16), whole);
+    })
+    .replace(/&#(\d+);?/g, function (whole, dec) {
+      return codePointChar(parseInt(dec, 10), whole);
+    })
+    .replace(/&([a-z][a-z0-9]{1,31});/gi, function (whole, name) {
+      const key = name.toLowerCase();
+      return Object.prototype.hasOwnProperty.call(NAMED_ENTITIES, key)
+        ? NAMED_ENTITIES[key]
+        : whole;
+    });
+}
+
+/**
+ * 去掉 html 标签与 markdown 标记，得到**纯文本**（摘要 / 字数 / 描述都用它）。
+ *
+ * 两类输入要区别对待：
+ *   · 渲染后的 HTML（绝大多数情况）—— 标签直接剥掉，剩下的都是要显示的文字，
+ *     **不能**再按 markdown 记号删 `#` `>` `~` 这些，否则会把正文里的
+ *     「C#」「a > b」「3~5」误伤；
+ *   · 原始 markdown（正文为空时的兜底）—— 才需要清理 `**` `#` 这类记号。
+ */
 function plainText(html, limit) {
-  let text = String(html || '')
-    .replace(/^\uFEFF?---\r?\n[\s\S]*?\r?\n---\s*/,' ') // 去掉 front-matter
+  const source = String(html || '');
+  const looksLikeHtml = /<\/?[a-z][^>]*>/i.test(source);
+
+  let text = source
+    .replace(/^\uFEFF?---\r?\n[\s\S]*?\r?\n---\s*/, ' ') // 去掉 front-matter
     .replace(/<script[\s\S]*?<\/script>/gi, ' ')
     .replace(/<style[\s\S]*?<\/style>/gi, ' ')
     /* 代码块工具条是主题注入的装饰（语言名 + 复制按钮），不能算进摘要/字数 */
     .replace(/<div class="code-toolbar"[\s\S]*?<\/div>/gi, ' ')
     .replace(/<!--more-->/gi, ' ')
-    .replace(/<[^>]+>/g, ' ')
-    .replace(/!\[[^\]]*\]\([^)]*\)/g, ' ')
-    .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')
-    .replace(/[`*_~>#]/g, '')
-    .replace(/&nbsp;/g, ' ')
-    .replace(/&amp;/g, '&')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
-    .replace(/\s+/g, ' ')
-    .trim();
+    .replace(/<[^>]+>/g, ' ') // 标签先剥
+    .replace(/!\[[^\]]*\]\([^)]*\)/g, ' '); // markdown 图片
 
-  if (limit && limit > 0 && text.length > limit) {
-    text = text.slice(0, limit).trim() + '…';
+  text = decodeEntities(text); // 实体先解码（必须在删 markdown 记号之前）
+
+  text = text.replace(/\[([^\]]*)\]\([^)]*\)/g, '$1'); // [文字](链接) → 文字
+
+  if (!looksLikeHtml) {
+    // 只有兜底走 raw markdown 时才清记号
+    text = text
+      .replace(/^ {0,3}#{1,6}\s+/gm, '') // 标题记号
+      .replace(/^ {0,3}>\s?/gm, '')      // 引用记号
+      .replace(/[*_`~]{1,3}/g, '');      // 强调 / 行内代码记号
+  }
+
+  text = text.replace(/\s+/g, ' ').trim();
+
+  if (limit && limit > 0 && Array.from(text).length > limit) {
+    text = Array.from(text).slice(0, limit).join('').trim() + '…';
   }
   return text;
 }
-
 /** 从正文里取第一张图片地址 */
 function firstImage(content) {
   const html = String(content || '');
@@ -463,6 +526,32 @@ hexo.extend.helper.register('monish_first_image', function monishFirstImage(cont
   return firstImage(content);
 });
 
+/**
+ * 安全地把对象序列化进 <script type="application/ld+json">。
+ *
+ * 直接用 JSON.stringify 有两个坑：
+ *   1. 标题里带 `</script>` 会**提前闭合脚本标签**，整段 JSON-LD 被截断；
+ *   2. `<!--` / `-->` 在 HTML 里也是注释分隔符。
+ * 所以把 `<` `>` `&` 转成 \u003c 这类转义 —— 对 JSON 解析结果没有任何影响，
+ * 但 HTML 分词器再也看不到尖括号了。这也是 JSON-LD 的通用做法。
+ */
+hexo.extend.helper.register('monish_jsonld', function monishJsonLd(value) {
+  return JSON.stringify(value === undefined ? {} : value)
+    .replace(/</g, '\\u003c')
+    .replace(/>/g, '\\u003e')
+    .replace(/&/g, '\\u0026')
+    .replace(/\u2028/g, '\\u2028')
+    .replace(/\u2029/g, '\\u2029');
+});
+
+/**
+ * 模板侧「纯文本」：去掉标签 / 实体 / markdown 记号。
+ * 摘要、meta description、JSON-LD 的文本字段都走它，保证不会把
+ * `&#x2F;`、`**`、`<mark>` 这类东西带进给人看的地方。
+ */
+hexo.extend.helper.register('monish_plain_text', function monishPlainText(value, limit) {
+  return plainText(value, limit);
+});
 /**
  * 日期版式用的英文月份缩写 / 日 / 完整标签。
  *

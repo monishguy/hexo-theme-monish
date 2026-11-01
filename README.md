@@ -26,6 +26,7 @@
 - [分类：文件夹即分类](#分类文件夹即分类)
 - [Markdown 与富文本](#markdown-与富文本)
 - [文章浏览量](#文章浏览量)
+- [SEO 与搜索引擎收录](#seo-与搜索引擎收录)
 - [动效](#动效)
 - [404 页面](#404-页面)
 - [三种主题模式](#三种主题模式)
@@ -682,6 +683,11 @@ pageview:
 
 单篇关闭：文章 front-matter 写 `pageview: false`。
 
+> **本地预览时数字会大得离谱**（比如 6000 万），这是正常现象：Vercount 用
+> window.location.href 作 key，所有人本地预览都是 localhost，于是汇总成了同一个
+> 巨大的桶。**线上域名才是真实数字** —— 实测本站在生产域名下 site_pv = 13、
+> site_uv = 2。想验证可以 
+px hexo generate 后直接看线上页面。
 ### 为什么默认用 Vercount 而不是不蒜子
 
 | provider | 说明 |
@@ -700,6 +706,94 @@ pageview:
 
 > 这一项需要访客能访问外网服务。如果你的读者主要在大陆且你的站点在境内，
 > 建议实测一下该服务的可达性；不可达时它会自动隐藏，不会报错或留白。
+
+## SEO 与搜索引擎收录
+
+主题内置了一套**零依赖**的 SEO 输出，不需要装任何插件。
+
+```yaml
+seo:
+  structured_data: true     # 首页 WebSite + 文章页 BlogPosting 的 JSON-LD
+  description_length: 150   # meta description 截断长度（建议 120~160）
+  sitemap: true             # 生成 /sitemap.xml 并输出 <link rel="sitemap">
+
+# 必应站长工具验证码，填 <meta name="msvalidate.01"> 的 content 值；留空不输出
+bing_site_verification:
+```
+
+### 结构化数据（JSON-LD）
+
+| 页面 | 输出 |
+| --- | --- |
+| 首页 | `WebSite`，`@id` 为 `{站点url}/#website` |
+| 文章页 | `BlogPosting`，`isPartOf` 指向上面的 WebSite `@id` |
+| 其他页 | 不输出（避免全站冗余脚本） |
+
+```json
+// 首页
+{ "@context": "https://schema.org", "@type": "WebSite",
+  "@id": "https://example.com/#website", "url": "https://example.com",
+  "name": "站点名", "description": "站点描述" }
+
+// 文章页（节选）
+{ "@context": "https://schema.org", "@type": "BlogPosting",
+  "headline": "文章标题", "datePublished": "…", "dateModified": "…",
+  "author": { "@type": "Person", "name": "作者" },
+  "isPartOf": { "@type": "WebSite", "@id": "https://example.com/#website" } }
+```
+
+**转义**：全部经 `monish_jsonld()` 序列化，它会把 `<` `>` `&` 转成 `\u003c` 这种形式。
+所以标题里出现 `"`、`\`、`</script>`、`<!--` 都不会破坏 JSON 结构，也不会提前闭合
+`<script type="application/ld+json">`。（已对 9 类极端输入做过往返测试。）
+
+**headline 一致性**：`BlogPosting.headline` 直接取页面标题，与 `<h1>` 和 `<title>`
+的开头完全一致 —— 这是 Bing 判断内容相关性的基础信号。
+
+### meta description
+
+同一页**只会有一个** `<meta name="description">`（由 Hexo 的 `open_graph()` 统一输出，
+内容由主题算好后传进去），且按页面类型保证不空、不重复：
+
+| 页面 | 兜底描述 |
+| --- | --- |
+| 文章 | front-matter `description` → 正文纯文本（截断到 `description_length`） |
+| 关于 / 自定义页 | front-matter `description` → 正文首段 |
+| 归档 | `站点名的归档页面`（年/月归档会带上时间） |
+| 分类 / 标签归档 | `站点名「分类名」分类页面` |
+| `/categories/`、`/tags/` 索引 | `站点名的分类页面` / `站点名的标签页面` |
+| 首页 | 站点描述 |
+
+正文纯文本统一经 `monish_plain_text()`：剥标签、**解码 HTML 实体**、去 markdown 记号。
+`hexo-renderer-marked` 会把 `/` 转义成 `&#x2F;`，这一步不处理的话摘要和描述里就会
+出现 `&#x2F;` 这种东西。
+
+### sitemap
+
+主题自带一个零依赖的 sitemap 生成器（`scripts/generator.js`），产出 `/sitemap.xml`，
+包含文章、独立页、归档/分类/标签索引，`<loc>` 已做百分号编码（中文和空格不会让
+搜索引擎报错）。
+
+> 如果你另装了 `hexo-generator-sitemap`，主题会**自动让位**（检测到
+> `hexo.config.sitemap` 就不生成），避免两条路由抢同一个文件；`<link rel="sitemap">`
+> 两种情况都有效。
+
+### Bing 那边要知道的两件事
+
+1. **结构化数据不是 Sitelinks 的开关。** Bing 官方的说法是：它对 schema.org 的原生
+   富媒体支持重点在 Offer / Product 这类电商类型，`WebSite` / `BlogPosting` 属于
+   **辅助信号**而不是必需项。它们的实际价值是：
+   - 帮 Bing 正确识别站点名称与品牌实体（减少「站点名被截成一句话」的情况）；
+   - 给 AI 摘要提供 grounding（明确「这段内容属于哪个站点、作者是谁、什么时候发布」）。
+2. **Sitelinks 由算法自动生成**，没有任何标记能直接开启。能做的是把基础打对：
+   站点结构清晰（归档 / 分类 / 标签页齐全）、`<title>` 与 `<h1>` 一致、
+   每页有唯一的 description、有 sitemap。
+
+验证与提交：
+
+1. 打开 [Bing Webmaster Tools](https://www.bing.com/webmasters) 添加站点；
+2. 它给的验证码填进主题 `_config.yml` 的 `bing_site_verification`；
+3. 在「站点地图」里提交 `https://你的域名/sitemap.xml`（主题已生成，无需插件）；
+4. 用 [Bing URL 检查](https://www.bing.com/webmasters/url-inspection) 看单页抓取情况。
 
 ## 动效
 
